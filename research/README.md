@@ -13,3 +13,9 @@ Every configured topic can specify `title_keywords`. The scanner retains a resul
 These are deliberately conservative heuristics. They can miss valid issues and cannot prove demand or competitors' deficiencies. Always read original discussions and the [first-run audit](2026-10-14-first-run-audit.md) before promoting a candidate.
 
 The scanner only samples the latest **20** matches per topic; it does **not** exhaustively enumerate GitHub Issues. Never interpret filtered counts as all irrelevant GitHub issues.
+
+## Global deduplication metrics
+
+New discovery reports include `global_metrics.total_retained_issue_topic_matches` (sum of retained per-topic counts) and `global_metrics.unique_issue_urls` (case-normalized GitHub Issue URL count after validation/filtering, deduplicated across topics). Existing report fields are preserved for downstream clients. The Markdown report surfaces both metrics.
+
+Because scans sample the latest 20 results per topic, neither count measures all related GitHub problems, distinct customers, or validated market demand.
