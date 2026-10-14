@@ -3,32 +3,81 @@
     {
       "id": "queue-reliability",
       "title": "Laravel queue reliability and retries",
-      "query": "\"laravel\" \"queue\" \"retry\" in:title,body"
+      "query": "\"laravel\" \"queue\" \"retry\" in:title,body language:PHP",
+      "title_keywords": [
+        "queue",
+        "queues",
+        "job",
+        "jobs",
+        "worker",
+        "workers",
+        "retry",
+        "retries",
+        "rabbitmq",
+        "horizon"
+      ]
     },
     {
       "id": "tenancy-isolation",
       "title": "Laravel multi-tenant isolation failures",
-      "query": "\"laravel\" \"tenant\" \"leak\" in:title,body"
+      "query": "\"laravel\" \"tenant\" \"leak\" in:title,body language:PHP",
+      "title_keywords": [
+        "tenant",
+        "tenants",
+        "tenancy",
+        "multi-tenant",
+        "isolation",
+        "context"
+      ]
     },
     {
       "id": "webhook-reliability",
       "title": "Webhook verification and delivery failures in PHP",
-      "query": "\"php\" \"webhook\" \"signature\" in:title,body"
+      "query": "\"php\" \"webhook\" \"signature\" in:title,body language:PHP",
+      "title_keywords": [
+        "webhook",
+        "webhooks",
+        "signature",
+        "hmac"
+      ]
     },
     {
       "id": "scheduled-jobs",
       "title": "Duplicate scheduler and background jobs",
-      "query": "\"laravel\" \"schedule\" \"duplicate\" in:title,body"
+      "query": "\"laravel\" \"schedule\" \"duplicate\" in:title,body language:PHP",
+      "title_keywords": [
+        "schedule",
+        "scheduler",
+        "cron",
+        "duplicate",
+        "jobs"
+      ]
     },
     {
       "id": "authorization-complexity",
       "title": "Laravel authorization and policy edge cases",
-      "query": "\"laravel\" \"policy\" \"permission\" in:title,body"
+      "query": "\"laravel\" \"policy\" \"permission\" in:title,body language:PHP",
+      "title_keywords": [
+        "authorization",
+        "policy",
+        "policies",
+        "permission",
+        "permissions",
+        "gate",
+        "gates"
+      ]
     },
     {
       "id": "database-locks",
       "title": "Laravel transaction locking and deadlocks",
-      "query": "\"laravel\" \"deadlock\" in:title,body"
+      "query": "\"laravel\" \"deadlock\" in:title,body language:PHP",
+      "title_keywords": [
+        "deadlock",
+        "deadlocks",
+        "locking",
+        "transaction",
+        "transactions"
+      ]
     }
   ]
 }
