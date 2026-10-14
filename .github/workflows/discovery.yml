@@ -24,7 +24,6 @@ jobs:
     timeout-minutes: 15
     permissions:
       contents: read
-      models: read
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -34,10 +33,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: python -m factory.cli --days 30 --output-dir artifacts
-      - name: AI-assisted hypothesis triage (best effort, no source verification)
+      - name: Optional OpenAI analysis (requires explicitly configured secret)
         continue-on-error: true
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_MODEL: ${{ vars.OPENAI_MODEL || 'gpt-5.4-mini' }}
         run: python -m factory.ai_triage --report artifacts/discovery.json --output artifacts/analysis.md
       - name: Upload reviewable report
         if: always()

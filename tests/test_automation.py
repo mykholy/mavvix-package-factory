@@ -116,7 +116,7 @@ class AITriageTests(unittest.TestCase):
     def test_parses_mock_completion_without_real_inference(self):
         def opener(request, timeout):
             self.assertEqual(request.get_method(), "POST")
-            self.assertIn("models.github.ai", request.full_url)
+            self.assertIn("api.openai.com", request.full_url)
             return FakeResponse({"choices": [{"message": {"content": "Needs source verification."}}]})
         result = summarize(report(), "faketoken", opener=opener)
         self.assertIn("Needs source verification", result)
