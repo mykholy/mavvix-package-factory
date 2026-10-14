@@ -28,7 +28,7 @@ Discover recurring, concrete developer problems, evaluate existing solutions and
 
 `GitHub Issues API → normalize/deduplicate → group signals → triage candidates → report artifact → human review → design issue → implementation PR → QA → approved release`
 
-The first scan is **deterministic**, not a claim that an AI independently validated market demand. An LLM-assisted stage, when enabled, must cite the collected evidence and never receive repository write credentials.
+The first scan is **deterministic**, not a claim that an AI independently validated market demand. GitHub Models was retired in July 2026; optional AI synthesis requires separately configured OpenAI API credentials, and is disabled by default. An LLM-assisted stage, when enabled, must cite the collected evidence and never receive repository write credentials.
 
 ## Development
 
