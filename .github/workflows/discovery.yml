@@ -1,6 +1,12 @@
 name: Daily developer issue discovery
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'factory/digest.py'
+      - 'factory/ai_triage.py'
+      - '.github/workflows/discovery.yml'
   schedule:
     - cron: '17 5 * * *'
   workflow_dispatch:
@@ -55,7 +61,7 @@ jobs:
         env:
           TRIGGER: ${{ github.event_name }}
         run: |
-          if [[ "$(date -u +%u)" == "1" || "$TRIGGER" == "workflow_dispatch" ]]; then
+          if [[ "$(date -u +%u)" == "1" || "$TRIGGER" == "workflow_dispatch" || "$TRIGGER" == "push" ]]; then
             echo "due=yes" >> "$GITHUB_OUTPUT"
           else
             echo "due=no" >> "$GITHUB_OUTPUT"
