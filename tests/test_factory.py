@@ -79,6 +79,41 @@ class ResearchTests(unittest.TestCase):
 
 
 
+class GlobalMetricsTests(unittest.TestCase):
+    def test_deduplicates_across_topics_and_within_topics(self):
+        class Client:
+            def search_issues(self, query, *, per_page=20):
+                if query.startswith("laravel queue"):
+                    return [issue(10), issue(10), issue(11)], False
+                return [issue(11), issue(12)], False
+
+        topics = [
+            Topic("queue", "Queue reliability", "laravel queue"),
+            Topic("tenancy", "Tenant isolation", "laravel tenancy"),
+        ]
+        opportunities, warnings = scan(Client(), topics, since=date(2026, 10, 1))
+        report = make_report(opportunities, warnings, date(2026, 10, 1), "synthetic_fixture")
+        self.assertEqual([op.issue_count for op in opportunities], [2, 2])
+        self.assertEqual(report["global_metrics"], {
+            "total_retained_issue_topic_matches": 4,
+            "unique_issue_urls": 3,
+        })
+        self.assertIn("Unique GitHub Issue URLs (across topics): 3", report_markdown(report))
+        self.assertIn("not independent developer demand", report_markdown(report))
+
+    def test_empty_report_has_zero_global_counts(self):
+        report = make_report([], [], date(2026, 10, 1), "synthetic_fixture")
+        self.assertEqual(report["global_metrics"], {
+            "total_retained_issue_topic_matches": 0,
+            "unique_issue_urls": 0,
+        })
+
+    def test_legacy_report_without_global_metadata_renders(self):
+        report = make_report([], [], date(2026, 10, 1), "synthetic_fixture")
+        del report["global_metrics"]
+        self.assertIn("Required next steps", report_markdown(report))
+
+
 class RelevanceTests(unittest.TestCase):
     def test_title_matches_but_laravel_context_is_missing(self):
         topic = Topic("q", "Queue reliability", "query", ("queue", "retry"))

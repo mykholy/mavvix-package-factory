@@ -98,6 +98,18 @@ def _markdown_text(value: str) -> str:
     return " ".join(value.split()).replace("\\", "\\\\").replace("[", "\\[").replace("]", "\\]")
 
 
+def global_discovery_metrics(opportunities: list[Opportunity]) -> dict[str, int]:
+    """Distinct canonical issue URLs across topics, not independent demand signals."""
+    return {
+        "total_retained_issue_topic_matches": sum(op.issue_count for op in opportunities),
+        "unique_issue_urls": len({
+            evidence.url.lower()
+            for op in opportunities
+            for evidence in op.evidence
+        }),
+    }
+
+
 def report_markdown(report: dict[str, Any]) -> str:
     lines = [
         "# Mavvix — Developer Issue Discovery",
@@ -114,6 +126,16 @@ def report_markdown(report: dict[str, Any]) -> str:
         "> not evidence of missing demand. GitHub search only samples the latest results.",
         "",
     ]
+    metrics = report.get("global_metrics")
+    if isinstance(metrics, dict):
+        lines.extend([
+            "## Across all topics",
+            "",
+            f"- Retained issue-topic matches: {metrics['total_retained_issue_topic_matches']}",
+            f"- Unique GitHub Issue URLs (across topics): {metrics['unique_issue_urls']}",
+            "- These are **sampled results**, not independent developer demand or market size.",
+            "",
+        ])
     for warning in report["warnings"]:
         lines.append(f"- **Warning:** {_markdown_text(warning)}")
     for opportunity in report["opportunities"]:
@@ -158,6 +180,7 @@ def make_report(
         "since": since.isoformat(),
         "mode": mode,
         "warnings": warnings,
+        "global_metrics": global_discovery_metrics(opportunities),
         "opportunities": [op.as_dict() for op in opportunities],
     }
 
