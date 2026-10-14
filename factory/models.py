@@ -54,6 +54,8 @@ class Opportunity:
     distinct_repositories: int
     signal_score: int
     evidence: tuple[Evidence, ...]
+    sampled_results: int = 0
+    filtered_results: int = 0
     decision: str = "human_review_required"
 
     def as_dict(self) -> dict[str, Any]:
