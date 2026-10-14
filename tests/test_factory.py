@@ -7,6 +7,7 @@ from pathlib import Path
 
 from factory.cli import main
 from factory.models import Evidence, signal_score
+from factory.relevance import relevance_reason
 from factory.research import Topic, load_topics, make_report, report_markdown, scan
 
 
@@ -75,6 +76,47 @@ class ResearchTests(unittest.TestCase):
             self.assertEqual(len(data["opportunities"]), 6)
             self.assertIn("no", "no opportunities auto-approved")
             self.assertTrue((output / "discovery.md").exists())
+
+
+
+class RelevanceTests(unittest.TestCase):
+    def test_title_matches_but_laravel_context_is_missing(self):
+        topic = Topic("q", "Queue reliability", "query", ("queue", "retry"))
+        self.assertEqual(
+            relevance_reason(issue(title="Queue retries fail"), topic),
+            "missing_laravel_context",
+        )
+
+    def test_laravel_context_and_topic_in_title_survive(self):
+        topic = Topic("q", "Queue reliability", "query", ("queue", "retry"))
+        matched = {**issue(title="Queue retry raises TypeError"), "body": "Laravel 12 retry fails"}
+        self.assertIsNone(relevance_reason(matched, topic))
+
+    def test_off_topic_and_dependency_dashboard_are_filtered(self):
+        topic = Topic("q", "Queue reliability", "query", ("queue",))
+        self.assertEqual(
+            relevance_reason({**issue(title="Unrelated planning"), "body": "Laravel queue retry"}, topic),
+            "off_topic_title",
+        )
+        self.assertEqual(
+            relevance_reason({**issue(title="Dependency Dashboard for queue")}, topic),
+            "known_noisy_title",
+        )
+
+    def test_live_style_topic_rejections_are_counted(self):
+        class Client:
+            def search_issues(self, query, *, per_page=20):
+                return [
+                    {**issue(1, title="Queue retry fails"), "body": "Laravel queue driver"},
+                    {**issue(2, title="General changelog"), "body": "Laravel queue driver"},
+                    {**issue(3, title="Queue retry fails"), "body": "Unrelated framework"},
+                ], False
+        topic = Topic("queue", "Queue reliability", "laravel queue", ("queue", "retry"))
+        results, _ = scan(Client(), [topic], since=date(2026, 10, 1))
+        self.assertEqual(results[0].issue_count, 1)
+        self.assertEqual(results[0].sampled_results, 3)
+        self.assertEqual(results[0].filtered_results, 2)
+        self.assertEqual(results[0].decision, "human_review_required")
 
 
 if __name__ == "__main__":

@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, Protocol
 
 from .models import Evidence, Opportunity, signal_score
+from .relevance import relevance_reason
 
 ID_PATTERN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 
@@ -16,6 +17,7 @@ class Topic:
     id: str
     title: str
     query: str
+    title_keywords: tuple[str, ...] = ()
 
 
 class IssuesClient(Protocol):
@@ -40,7 +42,15 @@ def load_topics(path: Path) -> list[Topic]:
             raise ValueError(f"Missing/oversized topic title or query: {tid}")
         if "updated:" in query.lower() or "is:pr" in query.lower():
             raise ValueError(f"Query contains unsupported qualifiers: {tid}")
-        result.append(Topic(tid, title, query))
+        keywords = entry.get("title_keywords", [])
+        if not isinstance(keywords, list) or len(keywords) > 12 or any(
+            not isinstance(term, str)
+            or not 2 <= len(term) <= 40
+            or "\n" in term
+            for term in keywords
+        ):
+            raise ValueError(f"Invalid title_keywords in {tid}")
+        result.append(Topic(tid, title, query, tuple(term.strip().lower() for term in keywords)))
         seen.add(tid)
     return result
 
@@ -63,10 +73,13 @@ def scan(
         if incomplete:
             warnings.append(f"GitHub reports incomplete search results for {topic.id}")
         unique: dict[str, Evidence] = {}
+        filtered = 0
         for raw in issues:
             evidence = Evidence.from_github(raw)
-            if evidence is not None:
-                unique.setdefault(evidence.url, evidence)
+            if evidence is None or relevance_reason(raw, topic):
+                filtered += 1
+                continue
+            unique.setdefault(evidence.url, evidence)
         selected = tuple(sorted(unique.values(), key=lambda e: (e.repository, e.number)))
         results.append(Opportunity(
             topic_id=topic.id,
@@ -75,6 +88,8 @@ def scan(
             distinct_repositories=len({e.repository.lower() for e in selected}),
             signal_score=signal_score(selected),
             evidence=selected,
+            sampled_results=len(issues),
+            filtered_results=filtered,
         ))
     return sorted(results, key=lambda x: (-x.signal_score, x.topic_id)), warnings
 
@@ -94,6 +109,9 @@ def report_markdown(report: dict[str, Any]) -> str:
         "> **Unvalidated research signals.** These are GitHub search results, not proven",
         "> unmet demand. Scores (0–35) are prioritization hints, not release approvals.",
         "> Every candidate requires competitive research and human approval.",
+        "> **Precision-first:** a title/topic keyword and Laravel context filter is applied",
+        "> where configured. Filtered items may still be relevant; missing signals are",
+        "> not evidence of missing demand. GitHub search only samples the latest results.",
         "",
     ]
     for warning in report["warnings"]:
@@ -105,6 +123,7 @@ def report_markdown(report: dict[str, Any]) -> str:
             "",
             f"- Topic: \`{opportunity['topic_id']}\`",
             f"- Signals: {opportunity['issue_count']} issues / {opportunity['distinct_repositories']} repositories",
+            f"- Search sample: {opportunity.get('sampled_results', 0)} issues; filtered: {opportunity.get('filtered_results', 0)}; remainder may include duplicates",
             f"- Hint: {opportunity['signal_score']}/35; decision: **human review required**",
             "",
         ])
@@ -134,7 +153,7 @@ def make_report(
     opportunities: list[Opportunity], warnings: list[str], since: date, mode: str
 ) -> dict[str, Any]:
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "generated_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
         "since": since.isoformat(),
         "mode": mode,
