@@ -1,6 +1,12 @@
 name: Daily developer issue discovery
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'factory/digest.py'
+      - 'factory/ai_triage.py'
+      - '.github/workflows/discovery.yml'
   schedule:
     - cron: '17 5 * * *'
   workflow_dispatch:
@@ -16,6 +22,9 @@ jobs:
   discover:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
+      models: read
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -25,6 +34,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: python -m factory.cli --days 30 --output-dir artifacts
+      - name: AI-assisted hypothesis triage (best effort, no source verification)
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python -m factory.ai_triage --report artifacts/discovery.json --output artifacts/analysis.md
       - name: Upload reviewable report
         if: always()
         uses: actions/upload-artifact@v4
@@ -33,3 +47,41 @@ jobs:
           path: artifacts/
           if-no-files-found: warn
           retention-days: 30
+
+  weekly-digest:
+    needs: [discover]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Check if weekly digest is due
+        id: due
+        env:
+          TRIGGER: ${{ github.event_name }}
+        run: |
+          if [[ "$(date -u +%u)" == "1" || "$TRIGGER" == "workflow_dispatch" || "$TRIGGER" == "push" ]]; then
+            echo "due=yes" >> "$GITHUB_OUTPUT"
+          else
+            echo "due=no" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.due.outputs.due == 'yes'
+      - uses: actions/setup-python@v5
+        if: steps.due.outputs.due == 'yes'
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        if: steps.due.outputs.due == 'yes'
+        with:
+          name: issue-discovery-${{ github.run_id }}
+          path: artifacts/
+      - name: Create or refresh one weekly research Issue
+        if: steps.due.outputs.due == 'yes'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          python -m factory.digest --report artifacts/discovery.json --analysis artifacts/analysis.md --run-url "$RUN_URL"
