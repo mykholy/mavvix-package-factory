@@ -1,0 +1,36 @@
+name: Factory quality checks
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile package
+        run: python -m compileall -q factory tests
+      - name: Unit tests
+        run: python -m unittest discover -s tests -v
+      - name: Offline discovery smoke test (synthetic input)
+        run: python -m factory.cli --fixture tests/fixtures/search.json --output-dir smoke
+      - name: Check synthetic fixture never promotes candidates
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          report = json.loads(Path("smoke/discovery.json").read_text())
+          assert report["mode"] == "synthetic_fixture"
+          assert all(item["decision"] == "human_review_required" for item in report["opportunities"])
+          print("Smoke test passed: no automatic promotion")
+          PY

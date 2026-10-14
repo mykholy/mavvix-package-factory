@@ -1,0 +1,24 @@
+{
+  "synthetic": true,
+  "description": "Fabricated offline fixtures. Never use as evidence of market demand.",
+  "queries": {
+    "\"laravel\" \"queue\" \"retry\" in:title,body": [
+      {
+        "html_url": "https://github.com/example-org/synthetic-app/issues/12",
+        "number": 12,
+        "title": "Queue retry problem (synthetic sample)",
+        "comments": 4,
+        "created_at": "2026-10-01T00:00:00Z",
+        "updated_at": "2026-10-02T00:00:00Z"
+      },
+      {
+        "html_url": "https://github.com/example-org/synthetic-app/issues/12",
+        "number": 12,
+        "title": "Duplicate test issue",
+        "comments": 4,
+        "created_at": "2026-10-01T00:00:00Z",
+        "updated_at": "2026-10-02T00:00:00Z"
+      }
+    ]
+  }
+}

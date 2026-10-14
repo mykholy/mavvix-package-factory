@@ -1,0 +1,34 @@
+{
+  "topics": [
+    {
+      "id": "queue-reliability",
+      "title": "Laravel queue reliability and retries",
+      "query": "\"laravel\" \"queue\" \"retry\" in:title,body"
+    },
+    {
+      "id": "tenancy-isolation",
+      "title": "Laravel multi-tenant isolation failures",
+      "query": "\"laravel\" \"tenant\" \"leak\" in:title,body"
+    },
+    {
+      "id": "webhook-reliability",
+      "title": "Webhook verification and delivery failures in PHP",
+      "query": "\"php\" \"webhook\" \"signature\" in:title,body"
+    },
+    {
+      "id": "scheduled-jobs",
+      "title": "Duplicate scheduler and background jobs",
+      "query": "\"laravel\" \"schedule\" \"duplicate\" in:title,body"
+    },
+    {
+      "id": "authorization-complexity",
+      "title": "Laravel authorization and policy edge cases",
+      "query": "\"laravel\" \"policy\" \"permission\" in:title,body"
+    },
+    {
+      "id": "database-locks",
+      "title": "Laravel transaction locking and deadlocks",
+      "query": "\"laravel\" \"deadlock\" in:title,body"
+    }
+  ]
+}
