@@ -6,6 +6,4 @@ namespace Mykholy\FailureLab\Exceptions;
 
 use RuntimeException;
 
-final class UnsafeEnvironment extends RuntimeException
-{
-}
+final class UnsafeEnvironment extends RuntimeException {}

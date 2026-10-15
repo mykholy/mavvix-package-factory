@@ -52,7 +52,4 @@ jobs:
         run: composer test
       - name: Pint formatting check (PHP 8.4/Laravel 13)
         if: matrix.php == '8.4' && matrix.laravel == '^13.0'
-        run: |
-          composer format
-          git diff -- src tests
-          test -z "$(git diff -- src tests)"
+        run: composer format:check

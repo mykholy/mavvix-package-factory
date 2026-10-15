@@ -14,8 +14,7 @@ final class AttemptOutcome
         private readonly bool $success,
         private readonly mixed $result,
         private readonly ?InjectedFault $fault,
-    ) {
-    }
+    ) {}
 
     public static function succeeded(mixed $result): self
     {

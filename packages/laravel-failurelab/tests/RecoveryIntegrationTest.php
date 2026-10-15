@@ -38,7 +38,9 @@ final class RecoveryIntegrationTest extends TestCase
         $gateway = new class
         {
             public int $requests = 0;
+
             public int $charges = 0;
+
             private array $references = [];
 
             public function capture(string $idempotencyKey): string

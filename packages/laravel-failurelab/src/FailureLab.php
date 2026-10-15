@@ -12,9 +12,7 @@ final class FailureLab
 {
     private ?Scenario $active = null;
 
-    public function __construct(private readonly Application $application)
-    {
-    }
+    public function __construct(private readonly Application $application) {}
 
     /**
      * Explicitly opt into a testing-only failure scenario.

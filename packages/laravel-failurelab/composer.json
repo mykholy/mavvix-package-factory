@@ -40,7 +40,7 @@
     }
   },
   "scripts": {
-    "test": "@php vendor/bin/phpunit --no-coverage",
+    "test": "@php vendor/bin/phpunit --no-coverage --fail-on-risky",
     "format": "@php vendor/bin/pint",
     "format:check": "@php vendor/bin/pint --test"
   },

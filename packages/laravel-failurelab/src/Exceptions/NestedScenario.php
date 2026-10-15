@@ -6,6 +6,4 @@ namespace Mykholy\FailureLab\Exceptions;
 
 use LogicException;
 
-final class NestedScenario extends LogicException
-{
-}
+final class NestedScenario extends LogicException {}

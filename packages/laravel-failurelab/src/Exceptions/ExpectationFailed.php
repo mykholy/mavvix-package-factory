@@ -6,6 +6,4 @@ namespace Mykholy\FailureLab\Exceptions;
 
 use RuntimeException;
 
-final class ExpectationFailed extends RuntimeException
-{
-}
+final class ExpectationFailed extends RuntimeException {}
