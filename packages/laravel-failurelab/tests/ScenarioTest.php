@@ -20,7 +20,6 @@ final class ScenarioTest extends TestCase
         $lab = app(FailureLab::class);
         self::assertSame($lab, app(FailureLab::class));
         $lab->checkpoint('payments.after_capture');
-        self::assertTrue(true);
     }
 
     public function test_simulated_failure_occurs_only_on_first_hit(): void
@@ -57,6 +56,8 @@ final class ScenarioTest extends TestCase
         $scenario->attempt($run)->assertSucceeded();
 
         $scenario->assertHits('checkout.after_save', 3)->assertInjectedCount(1);
+        self::assertCount(3, $scenario->outcomes());
+        self::assertTrue($scenario->outcomes()[1]->wasInjected());
     }
 
     public function test_domain_exceptions_propagate_and_active_scope_is_cleared(): void
@@ -101,6 +102,8 @@ final class ScenarioTest extends TestCase
         }
 
         $outer->attempt(fn () => $lab->checkpoint('outer'))->assertInjectedAt('outer');
+        self::assertCount(1, $outer->outcomes());
+        self::assertTrue($outer->outcomes()[0]->wasInjected());
     }
 
     public function test_invalid_names_are_rejected(): void
