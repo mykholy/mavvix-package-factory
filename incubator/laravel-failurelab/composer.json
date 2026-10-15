@@ -1,0 +1,30 @@
+{
+    "name": "mykholy/laravel-failurelab",
+    "description": "Deterministic fault-injection and delivery-replay assertions for Laravel integration tests.",
+    "type": "library",
+    "keywords": ["laravel", "testing", "fault-injection", "replay", "idempotency", "resilience", "integration-testing"],
+    "homepage": "https://github.com/mykholy/laravel-failurelab",
+    "license": "MIT",
+    "authors": [{"name": "Ahmed El-Kholy", "homepage": "https://github.com/mykholy"}],
+    "require": {
+        "php": "^8.3",
+        "illuminate/contracts": "^12.0 || ^13.0",
+        "illuminate/support": "^12.0 || ^13.0"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^10.0 || ^11.0",
+        "phpunit/phpunit": "^11.5 || ^12.5",
+        "laravel/pint": "^1.20"
+    },
+    "autoload": {"psr-4": {"Mykholy\\FailureLab\\": "src/"}},
+    "autoload-dev": {"psr-4": {"Mykholy\\FailureLab\\Tests\\": "tests/"}},
+    "scripts": {
+        "test": "phpunit",
+        "lint": "php -l src/FailureLab.php"
+    },
+    "extra": {
+        "laravel": {"providers": ["Mykholy\\FailureLab\\FailureLabServiceProvider"]}
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
