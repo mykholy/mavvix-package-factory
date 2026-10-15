@@ -165,6 +165,53 @@ final class ScenarioTest extends TestCase
         app(FailureLab::class)->scenario('forbidden');
     }
 
+    public function test_plan_freezes_even_if_real_domain_exception_escapes(): void
+    {
+        $lab = app(FailureLab::class);
+        $scenario = $lab->scenario('freeze after real exception');
+
+        try {
+            $scenario->attempt(static function (): never {
+                throw new RuntimeException('genuine failure');
+            });
+            self::fail('Expected real error');
+        } catch (RuntimeException) {
+        }
+
+        $this->expectException(InvalidArgumentException::class);
+        $scenario->failOnceAt('new.plan');
+    }
+
+    public function test_invariant_assertions_and_safe_summary(): void
+    {
+        $lab = app(FailureLab::class);
+        $scenario = $lab->scenario('invariant example')->failOnceAt('test.after_write');
+        $scenario->attempt(fn () => $lab->checkpoint('test.after_write'))
+            ->assertInjectedAt('test.after_write');
+        $scenario->attempt(fn () => $lab->checkpoint('test.after_write'))
+            ->assertSucceeded();
+
+        $scenario->assertInvariant('checkpoint executed twice', fn (): bool => count($scenario->outcomes()) === 2);
+        $report = $scenario->summary();
+
+        self::assertSame([
+            'scenario' => 'invariant example',
+            'attempts' => 2,
+            'simulated_faults' => 1,
+            'checkpoint_hits' => ['test.after_write' => 2],
+        ], $report);
+
+        try {
+            $scenario->assertInvariant('no secret values exposed', static fn (): bool => false);
+            self::fail('Expected explicit recovery invariant failure');
+        } catch (ExpectationFailed $e) {
+            self::assertSame(
+                'Recovery invariant failed: no secret values exposed.',
+                $e->getMessage()
+            );
+        }
+    }
+
     public function test_manual_injected_fault_is_not_a_real_worker_crash(): void
     {
         $fault = new InjectedFault('point', 1);
