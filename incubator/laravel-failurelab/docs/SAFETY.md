@@ -26,3 +26,10 @@ A payment test that mocks provider success on every retry might pass after two c
 ## Incident and vulnerability reporting
 
 Do not publish a working exploit or customer credentials in a GitHub issue. Prefer private vulnerability reporting or a private message to the maintainer.
+
+
+## Error-report redaction and test environment
+
+Scenario and replay assertions intentionally omit raw exception messages, which can contain HTTP bodies, tokens or private API responses. Report `summary()` includes only attempt status and checkpoint counters. Assertion names should remain non-sensitive.
+
+Execution requires **PHP CLI** and exactly `APP_ENV=testing`; this is a defense against accidental web invocation, **not proof** that your database and external services are safe. Always use disposable test dependencies.

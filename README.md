@@ -54,8 +54,8 @@ MIT (see LICENSE).
 
 ## Package pilot — Laravel FailureLab
 
-[FailureLab pre-alpha source](packages/laravel-failurelab/README.md) is now available for experimental Composer path installs and automated PHP/Laravel integration testing. It supplies explicit deterministic failure checkpoints and sequential recovery replay tests, not process-killing chaos or real distributed concurrency.
+[**FailureLab canonical incubator source**](incubator/laravel-failurelab/README.md) provides a fluent deterministic fault-injection and sequential replay test API, exercised by standalone smoke tests and real Laravel Testbench integration tests.
 
-[CI compatibility matrix](.github/workflows/failurelab-tests.yml) · [Engineering limitations](packages/laravel-failurelab/docs/DESIGN.md) · [Competitor comparison](packages/laravel-failurelab/docs/COMPETITORS.md).
+[CI matrix](.github/workflows/failurelab-incubator.yml) · [Safety model](incubator/laravel-failurelab/docs/SAFETY.md) · [Pilot gate](docs/FAILURELAB_PILOT.md).
 
-This is a researched **candidate** undergoing adoption validation. No stable release or Packagist publication is claimed.
+The one canonical Composer package lives under `incubator/laravel-failurelab/`. The earlier prototype under `packages/` was retired after a second implementation was discovered, preventing competing APIs and duplicate Composer identifiers. It remains accessible in the historical PRs (#14 and #16). No Packagist or stable publication has occurred.

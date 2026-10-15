@@ -6,10 +6,12 @@ namespace Mykholy\FailureLab;
 
 use Mykholy\FailureLab\Exceptions\ExpectationFailed;
 use Mykholy\FailureLab\Internal\Names;
+use Mykholy\FailureLab\Reports\AssertsRecoveryInvariants;
 
 /** Assertions throw on failure and integrate naturally into PHPUnit/Pest tests. */
 final readonly class ScenarioReport
 {
+    use AssertsRecoveryInvariants;
     /**
      * @param list<Attempt> $attempts
      * @param array<string, int> $hits
@@ -64,11 +66,30 @@ final readonly class ScenarioReport
     {
         if ($this->attempts === [] || $this->attempts[array_key_last($this->attempts)]->status !== 'completed') {
             $last = $this->attempts[array_key_last($this->attempts)] ?? null;
-            $reason = $last?->error?->getMessage() ?? 'No successful attempt';
-            throw new ExpectationFailed("Scenario [{$this->name}] did not complete: {$reason}");
+            $status = $last?->status ?? 'not-started';
+            $exception = $last?->error === null ? 'none' : get_debug_type($last->error);
+            throw new ExpectationFailed(
+                "Scenario [{$this->name}] did not complete: status={$status}; exception={$exception}. "
+                .'Exception messages are intentionally redacted.'
+            );
         }
 
         return $this;
+    }
+
+    /** Summary contains only execution metadata, never callback values or exception messages. */
+    public function summary(): array
+    {
+        $hits = $this->hits;
+        ksort($hits);
+
+        return [
+            'scenario' => $this->name,
+            'attempts' => count($this->attempts),
+            'completed' => count(array_filter($this->attempts, static fn (Attempt $attempt): bool => $attempt->status === 'completed')),
+            'interrupted' => count($this->interruptions),
+            'checkpoint_hits' => $hits,
+        ];
     }
 
     public function value(): mixed

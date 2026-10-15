@@ -79,3 +79,24 @@ jobs:
           composer update --with-all-dependencies --no-interaction --prefer-dist --no-progress
       - name: PHPUnit unit and Laravel integration tests
         run: vendor/bin/phpunit --configuration phpunit.xml.dist --fail-on-risky
+
+  source-archive:
+    needs: [smoke, laravel]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Export canonical Composer package
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          git archive --format=tar --prefix=laravel-failurelab/ HEAD:incubator/laravel-failurelab | gzip -9 > dist/laravel-failurelab-prealpha.tar.gz
+          tar -tzf dist/laravel-failurelab-prealpha.tar.gz | grep -q 'laravel-failurelab/composer.json'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: failurelab-canonical-source-${{ github.sha }}
+          path: dist/laravel-failurelab-prealpha.tar.gz
+          if-no-files-found: error
+          retention-days: 30
