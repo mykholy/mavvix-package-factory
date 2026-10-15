@@ -1,0 +1,52 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - php: '8.3'
+            laravel: '12'
+            testbench: '10'
+          - php: '8.4'
+            laravel: '12'
+            testbench: '10'
+          - php: '8.4'
+            laravel: '13'
+            testbench: '11'
+          - php: '8.5'
+            laravel: '13'
+            testbench: '11'
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    name: PHP ${{ matrix.php }} / Laravel ${{ matrix.laravel }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+          extensions: mbstring, dom, pdo_sqlite, sqlite3, tokenizer
+          tools: composer:v2
+      - name: Validate composer metadata
+        run: composer validate --no-check-publish --strict
+      - name: Pin matrix framework and test harness
+        run: |
+          composer require --dev --no-update "laravel/framework:^${{ matrix.laravel }}" "orchestra/testbench:^${{ matrix.testbench }}"
+          composer update --with-all-dependencies --no-interaction --prefer-dist --no-progress
+      - name: Lint sources and tests
+        run: find src tests examples -name '*.php' -print0 | xargs -0 -n1 php -l
+      - name: PHPUnit
+        run: vendor/bin/phpunit --configuration phpunit.xml.dist
+      - name: Standalone smoke demo
+        run: APP_ENV=testing php -d zend.assertions=1 -d assert.exception=1 examples/payment-demo.php

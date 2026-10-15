@@ -1,0 +1,32 @@
+name: Standalone engine smoke checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        php: ['8.3', '8.4', '8.5']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+      - name: PHP lint
+        run: find src tests examples -name '*.php' -print0 | xargs -0 -n1 php -l
+      - name: Standalone deterministic smoke checks
+        run: php tests/smoke.php
+      - name: Fake payment and webhook demo
+        env:
+          APP_ENV: testing
+        run: php examples/payment-demo.php

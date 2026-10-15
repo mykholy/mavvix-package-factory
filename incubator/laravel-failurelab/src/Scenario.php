@@ -1,0 +1,91 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Mykholy\FailureLab;
+
+use InvalidArgumentException;
+use Mykholy\FailureLab\Exceptions\InjectedFailure;
+use Mykholy\FailureLab\Internal\ActiveCheckpoint;
+use Mykholy\FailureLab\Internal\EnvironmentGuard;
+use Mykholy\FailureLab\Internal\FaultRule;
+use Mykholy\FailureLab\Internal\Names;
+use Throwable;
+
+/** In-process, test-only controlled interruption; never claims SIGKILL semantics. */
+final class Scenario
+{
+    /** @var list<FaultRule> */
+    private array $rules = [];
+
+    private int $maxAttempts = 1;
+
+    public function __construct(public readonly string $name, private readonly EnvironmentGuard $guard)
+    {
+        Names::scenario($name);
+    }
+
+    public function interruptOnceAt(string $checkpoint, int $onAttempt = 1): self
+    {
+        Names::checkpoint($checkpoint);
+
+        if ($onAttempt < 1 || $onAttempt > 20) {
+            throw new InvalidArgumentException('Attempt index must be between 1 and 20.');
+        }
+
+        foreach ($this->rules as $rule) {
+            if ($rule->checkpoint === $checkpoint && $rule->onAttempt === $onAttempt) {
+                throw new InvalidArgumentException('Duplicate fault rule for checkpoint and attempt.');
+            }
+        }
+
+        $next = clone $this;
+        $next->rules[] = new FaultRule($checkpoint, $onAttempt);
+
+        return $next;
+    }
+
+    /** Total attempts, including the initial invocation. */
+    public function attempts(int $count): self
+    {
+        if ($count < 1 || $count > 20) {
+            throw new InvalidArgumentException('Scenario attempts must be between 1 and 20.');
+        }
+
+        $next = clone $this;
+        $next->maxAttempts = $count;
+
+        return $next;
+    }
+
+    /**
+     * @param callable(\Mykholy\FailureLab\Contracts\Checkpoint, int): mixed $operation
+     * Each invocation is explicitly chosen by the caller; persistent state belongs to the host app.
+     */
+    public function run(callable $operation): ScenarioReport
+    {
+        $this->guard->assertTesting();
+
+        $attempts = [];
+        $hits = [];
+        $interruptions = [];
+
+        for ($index = 1; $index <= $this->maxAttempts; $index++) {
+            $points = new ActiveCheckpoint($index, $this->rules, $hits, $interruptions);
+
+            try {
+                $value = $operation($points, $index);
+                $attempts[] = new Attempt($index, 'completed', $value);
+                break;
+            } catch (InjectedFailure $failure) {
+                $attempts[] = new Attempt($index, 'interrupted', error: $failure);
+                // Only an injected interruption is retried; genuine exceptions are not.
+            } catch (Throwable $error) {
+                $attempts[] = new Attempt($index, 'failed', error: $error);
+                break;
+            }
+        }
+
+        return new ScenarioReport($this->name, $attempts, $hits, array_keys($interruptions));
+    }
+}

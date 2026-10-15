@@ -1,0 +1,8 @@
+/vendor/
+/.phpunit.cache/
+/.phpunit-watcher.yml
+/.idea/
+/.DS_Store
+/.env
+/composer.lock
+/coverage/
