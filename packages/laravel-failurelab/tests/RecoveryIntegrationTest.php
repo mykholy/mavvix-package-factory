@@ -84,9 +84,7 @@ final class RecoveryIntegrationTest extends TestCase
         $scenario->assertHits('checkout.after_gateway_acceptance', 2)
             ->assertInjectedCount(1)
             ->assertInvariant('exactly one provider charge', fn (): bool => $gateway->charges === 1)
-            ->assertInvariant('order reference persisted', static fn (): bool =>
-                DB::table('checkout_orders')->where('id', 10)->value('gateway_reference') === 'fake-ref-1'
-            );
+            ->assertInvariant('order reference persisted', static fn (): bool => DB::table('checkout_orders')->where('id', 10)->value('gateway_reference') === 'fake-ref-1');
     }
 
     public function test_acknowledgement_loss_after_db_commit_does_not_duplicate_local_webhook_effect(): void
@@ -122,8 +120,6 @@ final class RecoveryIntegrationTest extends TestCase
         self::assertSame(1, DB::table('webhook_receipts')->count());
         $scenario->assertHits('webhook.after_commit_before_ack', 2)
             ->assertInjectedCount(1)
-            ->assertInvariant('one persisted webhook effect', static fn (): bool =>
-                DB::table('webhook_effects')->count() === 1
-            );
+            ->assertInvariant('one persisted webhook effect', static fn (): bool => DB::table('webhook_effects')->count() === 1);
     }
 }
