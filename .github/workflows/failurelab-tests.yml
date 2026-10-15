@@ -53,3 +53,24 @@ jobs:
       - name: Pint formatting check (PHP 8.4/Laravel 13)
         if: matrix.php == '8.4' && matrix.laravel == '^13.0'
         run: composer format:check
+
+  source-archive:
+    needs: integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create clean Composer package archive
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          git archive --format=tar --prefix=laravel-failurelab/ HEAD:packages/laravel-failurelab | gzip -9 > dist/laravel-failurelab-prealpha.tar.gz
+          tar -tzf dist/laravel-failurelab-prealpha.tar.gz | grep -q 'laravel-failurelab/composer.json'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: laravel-failurelab-source-${{ github.sha }}
+          path: dist/laravel-failurelab-prealpha.tar.gz
+          if-no-files-found: error
+          retention-days: 30

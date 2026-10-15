@@ -19,6 +19,8 @@ final class Scenario
     /** @var list<AttemptOutcome> */
     private array $attempts = [];
 
+    private int $startedAttempts = 0;
+
     public function __construct(
         private readonly FailureLab $lab,
         public readonly string $name,
@@ -42,7 +44,7 @@ final class Scenario
             throw new InvalidArgumentException('onHit must be between 1 and 1000.');
         }
 
-        if ($this->attempts !== []) {
+        if ($this->startedAttempts !== 0) {
             throw new InvalidArgumentException('Cannot change a scenario plan after attempts begin.');
         }
 
@@ -64,6 +66,8 @@ final class Scenario
      */
     public function attempt(callable $operation): AttemptOutcome
     {
+        $this->startedAttempts++;
+
         try {
             $value = $this->lab->execute($this, $operation);
             $outcome = AttemptOutcome::succeeded($value);
@@ -114,6 +118,40 @@ final class Scenario
         }
 
         return $this;
+    }
+
+    /**
+     * Evaluate an explicit recovery invariant without printing underlying data.
+     * The callback is application-defined; exceptions from it are not masked.
+     */
+    public function assertInvariant(string $name, callable $predicate): self
+    {
+        if (trim($name) === '' || strlen($name) > 120 || str_contains($name, "\n")) {
+            throw new InvalidArgumentException('Invariant name must be a single line of 1–120 characters.');
+        }
+
+        if ($predicate() !== true) {
+            throw new ExpectationFailed(sprintf('Recovery invariant failed: %s.', $name));
+        }
+
+        return $this;
+    }
+
+    /** Safe, deterministic metadata only; no provider response values. */
+    public function summary(): array
+    {
+        $hits = $this->hits;
+        ksort($hits);
+
+        return [
+            'scenario' => $this->name,
+            'attempts' => count($this->attempts),
+            'simulated_faults' => count(array_filter(
+                $this->attempts,
+                static fn (AttemptOutcome $outcome): bool => $outcome->wasInjected(),
+            )),
+            'checkpoint_hits' => $hits,
+        ];
     }
 
     /** @return list<AttemptOutcome> */

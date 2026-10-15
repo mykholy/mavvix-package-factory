@@ -50,3 +50,12 @@ Mavvix Software · maintained by [@mykholy](https://github.com/mykholy).
 ## License
 
 MIT (see LICENSE).
+
+
+## Package pilot — Laravel FailureLab
+
+[FailureLab pre-alpha source](packages/laravel-failurelab/README.md) is now available for experimental Composer path installs and automated PHP/Laravel integration testing. It supplies explicit deterministic failure checkpoints and sequential recovery replay tests, not process-killing chaos or real distributed concurrency.
+
+[CI compatibility matrix](.github/workflows/failurelab-tests.yml) · [Engineering limitations](packages/laravel-failurelab/docs/DESIGN.md) · [Competitor comparison](packages/laravel-failurelab/docs/COMPETITORS.md).
+
+This is a researched **candidate** undergoing adoption validation. No stable release or Packagist publication is claimed.

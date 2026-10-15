@@ -87,13 +87,22 @@ $scenario->attempt(fn () => $service->capture($order->id))
 
 $scenario
     ->assertHits('checkout.after_provider_acceptance', 2)
-    ->assertInjectedCount(1);
+    ->assertInjectedCount(1)
+    ->assertInvariant(
+        'the provider was captured only once',
+        fn (): bool => $gateway->captures === 1,
+    );
+
+// Machine-readable metadata, with no provider response values:
+$this->assertSame(2, $scenario->summary()['attempts']);
 
 // Also assert provider fake capture count and persisted order state.
 // FailureLab does not implement provider idempotency for you.
 ```
 
 Use `->failOnHit('name', 2)` to target the second occurrence. Normal application exceptions propagate: the harness never hides them as injected faults.
+
+`assertInvariant(name, predicate)` executes an application-specific assertion after replay. It reports the invariant's **name only** when false, not the sensitive values checked. The `summary()` array reports scenario name, number of attempts, simulated-fault count and per-checkpoint hit counts, so it can be included in test diagnostics without logging external responses.
 
 ## Why the boundary matters
 
@@ -114,6 +123,8 @@ The included integration tests exercise:
 - Nth-hit selection, validation, exception propagation, scope cleanup and production-environment refusal
 
 These tests do not prove crash safety, true parallel concurrency or real-provider financial correctness. CI results must pass before further publication.
+
+A GitHub Actions artifact containing a clean pre-alpha source archive is generated after the compatibility matrix succeeds. Extract it and use a Composer `path` repository for experiments (not production deployments).
 
 ## Supported baseline (pre-alpha target)
 
