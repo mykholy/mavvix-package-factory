@@ -47,6 +47,6 @@ jobs:
       - name: Lint sources and tests
         run: find src tests examples -name '*.php' -print0 | xargs -0 -n1 php -l
       - name: PHPUnit
-        run: vendor/bin/phpunit --configuration phpunit.xml.dist
+        run: vendor/bin/phpunit --configuration phpunit.xml.dist --fail-on-risky
       - name: Standalone smoke demo
         run: APP_ENV=testing php -d zend.assertions=1 -d assert.exception=1 examples/payment-demo.php
