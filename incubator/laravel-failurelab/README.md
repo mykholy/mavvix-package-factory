@@ -72,7 +72,8 @@ $report
     ->assertAttempts(2)
     ->assertInterruptedAt('provider.accepted')
     ->assertCheckpointHit('provider.accepted', 2)
-    ->assertCompleted();
+    ->assertCompleted()
+    ->assertInvariant('provider accepted once', fn (): bool => $fakeGateway->acceptedCaptures('order-42') === 1);
 
 // Also assert the BUSINESS INVARIANT using the app's DB and fake provider:
 $this->assertSame(1, $fakeGateway->acceptedCaptures('order-42'));
@@ -94,6 +95,10 @@ $this->assertDatabaseCount('ledger_entries', 1);
 ```
 
 This is **sequential** replay, not a concurrent race test. Use your normal HTTP tests to check signature verification; use Race Lab or a process-isolated integration test to prove concurrency behavior.
+
+After `run()`, `assertInvariant(name, predicate)` evaluates a project-specific recovery rule; failure messages include the rule's name only, not the values tested. `summary()` exposes attempt/checkpoint counters without leaking provider responses or arbitrary exception messages.
+
+The current **canonical** incubator source is [here](https://github.com/mykholy/mavvix-package-factory/tree/main/incubator/laravel-failurelab). An earlier experimental implementation under `packages/` was retired to avoid two incompatible packages with the same Composer name.
 
 ## Guarantees and limits
 

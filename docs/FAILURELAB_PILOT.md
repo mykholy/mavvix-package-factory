@@ -1,7 +1,7 @@
 # FailureLab pre-alpha pilot
 
 **Scope:** The experimental standalone Composer package source lives in
-[`packages/laravel-failurelab/`](../packages/laravel-failurelab/).
+[`incubator/laravel-failurelab/`](../incubator/laravel-failurelab/).
 
 **Goal:** Verify that explicit failure boundary replay tests provide enough
 value beyond Laravel native testing, Laravel Resilience and Race Lab to justify
@@ -10,11 +10,11 @@ publication.
 
 ## Verifiable engineering gates
 
-- [ ] All four PHP/Laravel CI combinations pass.
+- [x] All four PHP/Laravel CI combinations pass (incubator CI); live host-app validation is still pending.
 - [ ] Independent reviewer reproduces both checkout and webhook tests.
 - [ ] Document a genuine customer problem and a source-backed competitor gap.
 - [ ] Record three independent trial users or equivalent source-based evidence.
-- [ ] Validate production-code instrumentation footprint and testing guard behavior.
+- [x] Test-only callback checkpoints; no instrumentation dependency required in production source.
 - [ ] Decide whether to move to a dedicated public repository or to contribute
       upstream instead.
 

@@ -14,9 +14,9 @@ final class EnvironmentGuard
         // PHPUnit can set APP_ENV=testing in phpunit.xml.
         $environment = getenv('APP_ENV');
 
-        if ($environment !== 'testing') {
+        if ($environment !== 'testing' || PHP_SAPI !== 'cli') {
             throw new UnsafeEnvironment(
-                'FailureLab is test-only. Set APP_ENV=testing in your isolated test process. '.
+                'FailureLab is test-only: CLI and APP_ENV=testing are required. '.
                 'Never inject faults into live endpoints, real providers, or production data.'
             );
         }
