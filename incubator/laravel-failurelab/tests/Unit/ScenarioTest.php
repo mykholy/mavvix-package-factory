@@ -98,6 +98,8 @@ final class ScenarioTest extends TestCase
             ->run(fn ($point) => $point->hit('point'));
         // First attempt completes: retrying cannot be assumed without an interruption.
         $report->assertAttempts(1)->assertCompleted()->assertInterruptedAt('point', 0);
+        self::assertSame('completed', $report->attempts[0]->status);
+        self::assertCount(0, $report->interruptions);
     }
 
     public function test_invalid_names_and_duplicate_fault_rules_fail_early(): void

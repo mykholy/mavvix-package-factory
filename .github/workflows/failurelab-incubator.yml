@@ -78,4 +78,4 @@ jobs:
           composer require --dev --no-update "laravel/framework:^${{ matrix.laravel }}" "orchestra/testbench:^${{ matrix.testbench }}"
           composer update --with-all-dependencies --no-interaction --prefer-dist --no-progress
       - name: PHPUnit unit and Laravel integration tests
-        run: vendor/bin/phpunit --configuration phpunit.xml.dist
+        run: vendor/bin/phpunit --configuration phpunit.xml.dist --fail-on-risky
