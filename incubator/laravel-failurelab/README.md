@@ -6,14 +6,13 @@
 <h1 align="center">Laravel FailureLab</h1>
 <p align="center">Deterministic fault injection and replay assertions for Laravel integration tests.</p>
 <p align="center">
-  <a href="https://github.com/mykholy/laravel-failurelab/actions/workflows/tests.yml"><img alt="Tests" src="https://github.com/mykholy/laravel-failurelab/actions/workflows/tests.yml/badge.svg"></a>
-  <a href="https://packagist.org/packages/mykholy/laravel-failurelab"><img alt="Packagist" src="https://img.shields.io/packagist/v/mykholy/laravel-failurelab"></a>
+  <a href="https://github.com/mykholy/mavvix-package-factory/actions/workflows/failurelab-incubator.yml"><img alt="Incubator CI" src="https://github.com/mykholy/mavvix-package-factory/actions/workflows/failurelab-incubator.yml/badge.svg"></a>
   <img alt="PHP 8.3+" src="https://img.shields.io/badge/PHP-8.3%2B-777BB4">
   <img alt="Laravel 12 or 13" src="https://img.shields.io/badge/Laravel-12%20%7C%2013-FF2D20">
   <a href="LICENSE"><img alt="MIT" src="https://img.shields.io/badge/license-MIT-green"></a>
 </p>
 
-> **Pre-alpha / release candidate source.** This repository content has not yet been released as a stable Composer package. Do not assume the Packagist link resolves until a real version is published and verified.
+> **Pre-alpha / incubator source.** This repository content has not yet been released as a stable Composer package. Do not assume the Packagist link resolves until a real version is published and verified.
 
 A payment provider accepts a charge, but your application throws before saving the result. A webhook arrives three times. How do you prove your code won't create the local effect twice?
 
@@ -38,7 +37,7 @@ It does **not** replace Race Lab, Horizon, Pulse, FlowGuard, Testbench, real sub
 
 ## Installation
 
-**Not published yet.** For a local checkout or a path repository in an existing Laravel 12/13 test application:
+**Not published yet.** Clone/extract the package source into `../laravel-failurelab`, or use the incubator directory from the factory repository. Then configure a local path repository in a Laravel 12/13 test application:
 
 ```bash
 composer config repositories.failurelab '{"type":"path","url":"../laravel-failurelab","options":{"symlink":true}}'
@@ -108,6 +107,10 @@ This is **sequential** replay, not a concurrent race test. Use your normal HTTP 
 | Work with regular PHPUnit/Pest assertions | Depend on a daemon, production middleware or migration |
 
 For edge cases, see [Limitations & threat model](docs/SAFETY.md), [Design decisions](docs/DESIGN.md), and [Runnable examples](examples/README.md).
+
+## GitHub incubation
+
+The auditable source and automated test matrix currently live at [Mavvix Package Factory / FailureLab incubator](https://github.com/mykholy/mavvix-package-factory/tree/main/incubator/laravel-failurelab). The standalone `mykholy/laravel-failurelab` repository and its Packagist package have not been created or verified. Do not install from an unverified package of that name.
 
 ## Developer workflow
 
