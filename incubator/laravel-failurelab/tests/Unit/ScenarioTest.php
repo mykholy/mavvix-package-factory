@@ -102,6 +102,62 @@ final class ScenarioTest extends TestCase
         self::assertCount(0, $report->interruptions);
     }
 
+    public function test_all_configured_faults_must_be_observed(): void
+    {
+        $report = FailureLab::scenario('multi-fault handshake')
+            ->interruptOnceAt('before.persist', onAttempt: 1)
+            ->interruptOnceAt('after.persist', onAttempt: 2)
+            ->attempts(3)
+            ->run(static function ($checkpoint): string {
+                $checkpoint->hit('before.persist');
+                $checkpoint->hit('after.persist');
+
+                return 'ok';
+            });
+
+        $report->assertAttempts(3)
+            ->assertFaultPlanSatisfied()
+            ->assertInterruptedAt('before.persist')
+            ->assertInterruptedAt('after.persist')
+            ->assertCompleted();
+        self::assertSame(['before.persist@1', 'after.persist@2'], $report->scheduledInterruptions);
+    }
+
+    public function test_configured_fault_can_be_skipped_by_early_completion_and_must_fail_assertion(): void
+    {
+        $report = FailureLab::scenario('unreachable later fault')
+            ->interruptOnceAt('will.not.run', onAttempt: 2)
+            ->attempts(3)
+            ->run(static function (): string { return 'completed on first attempt'; });
+
+        $report->assertAttempts(1)->assertCompleted();
+        $this->expectException(ExpectationFailed::class);
+        $this->expectExceptionMessage('will.not.run@2');
+        $report->assertFaultPlanSatisfied();
+    }
+
+    public function test_empty_fault_plan_is_not_accepted_as_verified(): void
+    {
+        $report = FailureLab::scenario('no injection configured')
+            ->run(static fn (): bool => true);
+
+        $report->assertCompleted();
+        $this->expectException(ExpectationFailed::class);
+        $this->expectExceptionMessage('has no configured fault rules');
+        $report->assertFaultPlanSatisfied();
+    }
+
+    public function test_satisfied_fault_plan_does_not_claim_scenario_completed(): void
+    {
+        $report = FailureLab::scenario('one attempt stopped')
+            ->interruptOnceAt('before.remote')
+            ->run(static fn ($checkpoint) => $checkpoint->hit('before.remote'));
+
+        $report->assertFaultPlanSatisfied();
+        $this->expectException(ExpectationFailed::class);
+        $report->assertCompleted();
+    }
+
     public function test_invalid_names_and_duplicate_fault_rules_fail_early(): void
     {
         $this->expectException(InvalidArgumentException::class);
