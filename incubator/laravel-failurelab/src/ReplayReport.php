@@ -10,6 +10,7 @@ use Mykholy\FailureLab\Reports\AssertsRecoveryInvariants;
 final readonly class ReplayReport
 {
     use AssertsRecoveryInvariants;
+
     /** @param list<Attempt> $deliveries */
     public function __construct(public string $name, public array $deliveries) {}
 

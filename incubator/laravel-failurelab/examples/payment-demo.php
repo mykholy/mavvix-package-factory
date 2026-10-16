@@ -38,8 +38,12 @@ $report = $scenario->run(static function ($checkpoint) use (&$charges, &$provide
 });
 
 $report->assertAttempts(2)->assertInterruptedAt('provider.accepted')->assertCompleted();
-if (count($charges) !== 1) { throw new RuntimeException('Unexpected duplicate provider acceptance'); }
-if ($state['order'] !== 'paid') { throw new RuntimeException('Order recovery failed'); }
+if (count($charges) !== 1) {
+    throw new RuntimeException('Unexpected duplicate provider acceptance');
+}
+if ($state['order'] !== 'paid') {
+    throw new RuntimeException('Order recovery failed');
+}
 
 $effects = 0;
 $seen = [];
@@ -51,7 +55,9 @@ $webhook = FailureLab::replay('evt_42')->times(3)->run(static function () use (&
     $effects++;
 });
 $webhook->assertDeliveries(3)->assertAllCompleted();
-if ($effects !== 1) { throw new RuntimeException('Webhook replay produced duplicate local effects'); }
+if ($effects !== 1) {
+    throw new RuntimeException('Webhook replay produced duplicate local effects');
+}
 
 printf("PASS: %d provider calls, %d accepted charges, state=%s, webhook deliveries=%d, effects=%d\n",
     $providerCalls, count($charges), $state['order'], count($webhook->deliveries), $effects);

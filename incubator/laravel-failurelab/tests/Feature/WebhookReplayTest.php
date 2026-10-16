@@ -72,5 +72,4 @@ final class WebhookReplayTest extends TestCase
         self::assertSame(1, DB::table('recovery_events')->count());
         self::assertSame(1, DB::table('recovery_ledger')->count());
     }
-
 }

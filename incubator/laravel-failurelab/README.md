@@ -71,6 +71,7 @@ $report = FailureLab::scenario('capture accepted, local commit interrupted')
 $report
     ->assertAttempts(2)
     ->assertInterruptedAt('provider.accepted')
+    ->assertFaultPlanSatisfied() // confirm every configured fault actually fired
     ->assertCheckpointHit('provider.accepted', 2)
     ->assertCompleted()
     ->assertInvariant('provider accepted once', fn (): bool => $fakeGateway->acceptedCaptures('order-42') === 1);
@@ -79,6 +80,13 @@ $report
 $this->assertSame(1, $fakeGateway->acceptedCaptures('order-42'));
 $this->assertSame('paid', Order::findOrFail(42)->status);
 ```
+
+**Avoid false-green tests:** a scenario can complete successfully without ever
+reaching a configured fault. Always pair `assertFaultPlanSatisfied()` with
+`assertCompleted()` when your test is intended to prove recovery. The first
+assertion verifies every configured checkpoint/attempt was actually interrupted;
+the second verifies the operation eventually completed. Neither proves your
+payment or database invariant by itself.
 
 The fake gateway **must implement provider-side idempotency** for this assertion to be meaningful. FailureLab does not make an unsafe checkout safe; it exposes whether your integration handles the replay. Real external acceptance and unknown outcomes require reconciliation logic in your app.
 

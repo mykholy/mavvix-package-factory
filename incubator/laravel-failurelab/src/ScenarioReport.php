@@ -12,16 +12,19 @@ use Mykholy\FailureLab\Reports\AssertsRecoveryInvariants;
 final readonly class ScenarioReport
 {
     use AssertsRecoveryInvariants;
+
     /**
-     * @param list<Attempt> $attempts
-     * @param array<string, int> $hits
-     * @param list<string> $interruptions
+     * @param  list<Attempt>  $attempts
+     * @param  array<string, int>  $hits
+     * @param  list<string>  $interruptions
+     * @param  list<string>  $scheduledInterruptions  Expected rules as checkpoint@attempt.
      */
     public function __construct(
         public string $name,
         public array $attempts,
         public array $hits,
         public array $interruptions,
+        public array $scheduledInterruptions = [],
     ) {}
 
     public function assertAttempts(int $expected): self
@@ -29,6 +32,32 @@ final readonly class ScenarioReport
         $actual = count($this->attempts);
         if ($actual !== $expected) {
             throw new ExpectationFailed("Scenario [{$this->name}] expected {$expected} attempts; got {$actual}.");
+        }
+
+        return $this;
+    }
+
+    /**
+     * Fail if any configured checkpoint fault was never injected.
+     *
+     * This catches false-green tests when refactoring prevents an expected
+     * checkpoint from being reached. Completion must be asserted separately.
+     */
+    public function assertFaultPlanSatisfied(): self
+    {
+        if ($this->scheduledInterruptions === []) {
+            throw new ExpectationFailed(
+                "Scenario [{$this->name}] has no configured fault rules to verify."
+            );
+        }
+
+        $missing = array_values(array_diff($this->scheduledInterruptions, $this->interruptions));
+
+        if ($missing !== []) {
+            throw new ExpectationFailed(
+                "Scenario [{$this->name}] did not reach scheduled fault(s): "
+                .implode(', ', $missing).'.'
+            );
         }
 
         return $this;
