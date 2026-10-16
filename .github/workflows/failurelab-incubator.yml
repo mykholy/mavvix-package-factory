@@ -109,7 +109,9 @@ jobs:
           set -euo pipefail
           mkdir -p dist
           git archive --format=tar --prefix=laravel-failurelab/ HEAD:incubator/laravel-failurelab | gzip -9 > dist/laravel-failurelab-prealpha.tar.gz
-          tar -tzf dist/laravel-failurelab-prealpha.tar.gz | grep -q 'laravel-failurelab/composer.json'
+          # Avoid grep -q early pipe close with pipefail (tar may exit on SIGPIPE).
+          tar -tzf dist/laravel-failurelab-prealpha.tar.gz > dist/archive-contents.txt
+          grep -Fxq 'laravel-failurelab/composer.json' dist/archive-contents.txt
       - uses: actions/upload-artifact@v4
         with:
           name: failurelab-canonical-source-${{ github.sha }}
