@@ -33,3 +33,7 @@ Do not publish a working exploit or customer credentials in a GitHub issue. Pref
 Scenario and replay assertions intentionally omit raw exception messages, which can contain HTTP bodies, tokens or private API responses. Report `summary()` includes only attempt status and checkpoint counters. Assertion names should remain non-sensitive.
 
 Execution requires **PHP CLI** and exactly `APP_ENV=testing`; this is a defense against accidental web invocation, **not proof** that your database and external services are safe. Always use disposable test dependencies.
+
+## Injected-failure authenticity
+
+A callback may catch the injected exception itself. Such a swallowed interruption **does not** prove recovery: only a checkpoint-issued exception that escapes into the runner counts toward `assertFaultPlanSatisfied()`. An application that throws its own `InjectedFailure` instance is treated as an ordinary failed attempt, never as a retry trigger. This prevents a false-green fault plan when a handler refactor suppresses the test failure or fabricates the same public exception type.

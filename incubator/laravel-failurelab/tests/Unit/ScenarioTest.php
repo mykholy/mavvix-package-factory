@@ -160,6 +160,68 @@ final class ScenarioTest extends TestCase
         $report->assertCompleted();
     }
 
+
+    public function test_swallowed_fault_is_not_counted_as_a_verified_interruption(): void
+    {
+        $report = FailureLab::scenario('handler swallowed test interruption')
+            ->interruptOnceAt('after.provider')
+            ->attempts(2)
+            ->run(static function ($checkpoint): string {
+                try {
+                    $checkpoint->hit('after.provider');
+                } catch (InjectedFailure) {
+                    return 'swallowed';
+                }
+
+                return 'unreachable';
+            });
+
+        $report->assertAttempts(1)->assertCompleted()->assertInterruptedAt('after.provider', 0);
+
+        $this->expectException(ExpectationFailed::class);
+        $this->expectExceptionMessage('after.provider@1');
+        $report->assertFaultPlanSatisfied();
+    }
+
+    public function test_callback_thrown_lookalike_exception_is_not_retried(): void
+    {
+        $executions = 0;
+
+        $report = FailureLab::scenario('forged exception must be treated as application failure')
+            ->interruptOnceAt('after.provider')
+            ->attempts(3)
+            ->run(static function () use (&$executions): never {
+                $executions++;
+
+                throw new InjectedFailure('after.provider', 1);
+            });
+
+        self::assertSame(1, $executions);
+        $report->assertAttempts(1)->assertInterruptedAt('after.provider', 0);
+        self::assertSame('failed', $report->attempts[0]->status);
+
+        $this->expectException(ExpectationFailed::class);
+        $report->assertFaultPlanSatisfied();
+    }
+
+    public function test_rethrowing_the_original_checkpoint_exception_still_retries(): void
+    {
+        $report = FailureLab::scenario('original exception identity')
+            ->interruptOnceAt('after.provider')
+            ->attempts(2)
+            ->run(static function ($checkpoint): string {
+                try {
+                    $checkpoint->hit('after.provider');
+                } catch (InjectedFailure $failure) {
+                    throw $failure;
+                }
+
+                return 'completed';
+            });
+
+        $report->assertAttempts(2)->assertFaultPlanSatisfied()->assertCompleted();
+    }
+
     public function test_invalid_names_and_duplicate_fault_rules_fail_early(): void
     {
         $this->expectException(InvalidArgumentException::class);

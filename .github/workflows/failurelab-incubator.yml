@@ -156,8 +156,85 @@ jobs:
           PHP
           APP_ENV=testing php "$RUNNER_TEMP/check-consumer.php"
 
+  static-analysis:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: incubator/laravel-failurelab
+    steps:
+      - uses: actions/checkout@v5
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+          extensions: mbstring, dom, pdo_sqlite, sqlite3
+          tools: composer:v2
+      - name: Resolve Laravel 13 and static analysis dependencies
+        run: |
+          composer require --dev --no-update "laravel/framework:^13.0" "orchestra/testbench:^11.0"
+          composer update --with-all-dependencies --no-interaction --prefer-dist --no-progress
+      - name: PHPStan clean baseline
+        run: composer analyse
+
+  real-database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        driver: ['mysql', 'pgsql']
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_DATABASE: failurelab_test
+          MYSQL_USER: failurelab
+          MYSQL_PASSWORD: failurelab_ci_only
+          MYSQL_ROOT_PASSWORD: failurelab_ci_root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=15
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: failurelab_test
+          POSTGRES_USER: failurelab
+          POSTGRES_PASSWORD: failurelab_ci_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U failurelab -d failurelab_test"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=15
+    defaults:
+      run:
+        working-directory: incubator/laravel-failurelab
+    steps:
+      - uses: actions/checkout@v5
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+          extensions: mbstring, dom, pdo_mysql, pdo_pgsql, pdo_sqlite, sqlite3
+          tools: composer:v2
+      - name: Resolve Laravel 13 and Testbench
+        run: |
+          composer require --dev --no-update "laravel/framework:^13.0" "orchestra/testbench:^11.0"
+          composer update --with-all-dependencies --no-interaction --prefer-dist --no-progress
+      - name: Transaction and replay integration on ${{ matrix.driver }}
+        env:
+          FAILURELAB_TEST_DB: ${{ matrix.driver }}
+          APP_ENV: testing
+        run: vendor/bin/phpunit --configuration phpunit.xml.dist --filter DatabaseBoundaryTest --fail-on-risky
+
   source-archive:
-    needs: [smoke, laravel, consumer-install]
+    needs: [smoke, laravel, consumer-install, static-analysis, real-database]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:

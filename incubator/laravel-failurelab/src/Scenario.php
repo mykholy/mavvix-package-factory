@@ -72,15 +72,23 @@ final class Scenario
         $interruptions = [];
 
         for ($index = 1; $index <= $this->maxAttempts; $index++) {
-            $points = new ActiveCheckpoint($index, $this->rules, $hits, $interruptions);
+            $points = new ActiveCheckpoint($index, $this->rules, $hits);
 
             try {
                 $value = $operation($points, $index);
                 $attempts[] = new Attempt($index, 'completed', $value);
                 break;
             } catch (InjectedFailure $failure) {
+                $rule = $points->issuedRuleFor($failure);
+                if ($rule === null) {
+                    // A callback may throw the public exception type itself. Never trust its class alone.
+                    $attempts[] = new Attempt($index, 'failed', error: $failure);
+                    break;
+                }
+
+                // An interruption counts only if it escaped the handler back to the runner.
+                $interruptions[$rule] = true;
                 $attempts[] = new Attempt($index, 'interrupted', error: $failure);
-                // Only an injected interruption is retried; genuine exceptions are not.
             } catch (Throwable $error) {
                 $attempts[] = new Attempt($index, 'failed', error: $error);
                 break;
