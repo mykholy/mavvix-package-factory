@@ -10,7 +10,7 @@ No global state, facades, database tables, production middleware or queue interc
 
 1. A named checkpoint is interrupted once on its specified attempt, provided the caller actually reaches it.
 2. The bounded runner retries only its own `InjectedFailure` exception.
-3. The report records which attempt completed/interrupted/failed and how often each checkpoint was hit.
+3. The report records which attempt completed/interrupted/failed and how often each checkpoint was hit. `assertFaultPlanSatisfied()` additionally checks that every configured fault was actually triggered; tests can otherwise silently skip a breakpoint after refactoring. Assert final completion and business invariants separately.
 4. The replay runner calls the handler sequentially up to the requested delivery count, **stopping at the first unexpected error by default**. An opt-in `continueAfterFailure()` models subsequent delivery attempts without simulating transport or process termination. `assertFailedDeliveries()` and `assertRecoveredAfterFailure()` are execution assertions; a business invariant must be checked separately.
 5. Runtime rejects execution unless `APP_ENV=testing`.
 
