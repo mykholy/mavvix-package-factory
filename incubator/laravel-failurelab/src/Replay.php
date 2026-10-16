@@ -14,6 +14,8 @@ final class Replay
 {
     private int $deliveries = 2;
 
+    private bool $continueAfterFailure = false;
+
     public function __construct(public readonly string $name, private readonly EnvironmentGuard $guard)
     {
         Names::scenario($name);
@@ -31,6 +33,20 @@ final class Replay
         return $next;
     }
 
+    /**
+     * Continue with later sequential deliveries even if a handler throws.
+     *
+     * Opt-in only: callers must explicitly model retry-safe business behavior.
+     * This is not a transport or queue retry, nor a real process restart.
+     */
+    public function continueAfterFailure(): self
+    {
+        $next = clone $this;
+        $next->continueAfterFailure = true;
+
+        return $next;
+    }
+
     /** @param callable(int): mixed $handler */
     public function run(callable $handler): ReplayReport
     {
@@ -42,7 +58,10 @@ final class Replay
                 $attempts[] = new Attempt($delivery, 'completed', $handler($delivery));
             } catch (Throwable $error) {
                 $attempts[] = new Attempt($delivery, 'failed', error: $error);
-                break; // Fail closed: do not automatically retry unknown side effects.
+                if (! $this->continueAfterFailure) {
+                    // By default, stop on unknown side effects rather than replay blindly.
+                    break;
+                }
             }
         }
 

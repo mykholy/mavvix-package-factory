@@ -21,7 +21,7 @@ final class ReportAssertionsTest extends TestCase
         );
 
         $report->assertAllCompleted()->assertInvariant('one local effect', static fn (): bool => $effectCount === 1);
-        self::assertSame(['scenario' => 'same webhook', 'deliveries' => 3, 'completed' => 3], $report->summary());
+        self::assertSame(['scenario' => 'same webhook', 'deliveries' => 3, 'completed' => 3, 'failed' => 0], $report->summary());
     }
 
     public function test_failed_invariant_reports_name_not_private_data(): void

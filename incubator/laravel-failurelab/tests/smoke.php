@@ -101,4 +101,24 @@ $multi = FailureLab::scenario('two controlled faults')
 $multi->assertAttempts(3)->assertInterruptedAt('first')->assertInterruptedAt('second')->assertCompleted();
 $verify($multi->value() === 'success', 'multiple scheduled faults');
 
+$recovered = FailureLab::replay('opt-in transport retry')
+    ->times(3)
+    ->continueAfterFailure()
+    ->run(static function (int $delivery): int {
+        if ($delivery === 1) {
+            throw new LogicException('synthetic handler error');
+        }
+
+        return $delivery;
+    });
+$recovered->assertDeliveries(3)->assertFailedDeliveries(1)->assertRecoveredAfterFailure();
+$verify(
+    $recovered->summary()['completed'] === 2 && $recovered->summary()['failed'] === 1,
+    'retry recovery metadata has two successes and one failed delivery',
+);
+$recoveredByDefault = FailureLab::replay('default aborts')->times(3)
+    ->run(static fn (): never => throw new LogicException('stop'));
+$recoveredByDefault->assertDeliveries(1)->assertFailedDeliveries(1);
+$verify(count($recoveredByDefault->deliveries) === 1, 'default remains fail closed');
+
 printf("PASS: %d standalone smoke assertions, two scenario types, safety guard and report checks\n", $checks);
