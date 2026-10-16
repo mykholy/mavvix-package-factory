@@ -96,6 +96,34 @@ $this->assertDatabaseCount('ledger_entries', 1);
 
 This is **sequential** replay, not a concurrent race test. Use your normal HTTP tests to check signature verification; use Race Lab or a process-isolated integration test to prove concurrency behavior.
 
+### Example: failed delivery, then a successful retry
+
+By default, the replay runner **stops after an unexpected exception**. To model a
+transport sending the same message again *after a failed handler*, opt in:
+
+```php
+$report = FailureLab::replay('webhook failed then recovered')
+    ->times(3)
+    ->continueAfterFailure()
+    ->run(function (int $delivery) use ($handler, $verifiedEvent): void {
+        $handler->handle($verifiedEvent); // your application, using a disposable test DB
+    });
+
+$report->assertDeliveries(3)
+    ->assertFailedDeliveries(1)
+    ->assertRecoveredAfterFailure() // a later handler invocation succeeded
+    ->assertInvariant('one committed ledger entry', fn (): bool => DB::table('ledger_entries')->count() === 1);
+```
+
+Configure your **test handler** to fail on a chosen delivery, e.g. throw inside a
+database transaction the first time. FailureLab never injects an exception
+into the replay callback automatically. A recovered handler call is **not**
+proof of exactly-once delivery or correct financial state: use your own
+`assertInvariant()` plus provider-fake assertions. Use the default stop-on-error
+behavior when replaying potentially unsafe side effects.
+
+
+
 After `run()`, `assertInvariant(name, predicate)` evaluates a project-specific recovery rule; failure messages include the rule's name only, not the values tested. `summary()` exposes attempt/checkpoint counters without leaking provider responses or arbitrary exception messages.
 
 The current **canonical** incubator source is [here](https://github.com/mykholy/mavvix-package-factory/tree/main/incubator/laravel-failurelab). An earlier experimental implementation under `packages/` was retired to avoid two incompatible packages with the same Composer name.
