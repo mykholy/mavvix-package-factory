@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Mykholy\FailureLab;
 
 use InvalidArgumentException;
+use Mykholy\FailureLab\Contracts\Checkpoint;
 use Mykholy\FailureLab\Exceptions\InjectedFailure;
 use Mykholy\FailureLab\Internal\ActiveCheckpoint;
 use Mykholy\FailureLab\Internal\EnvironmentGuard;
@@ -59,8 +60,8 @@ final class Scenario
     }
 
     /**
-     * @param callable(\Mykholy\FailureLab\Contracts\Checkpoint, int): mixed $operation
-     * Each invocation is explicitly chosen by the caller; persistent state belongs to the host app.
+     * @param  callable(Checkpoint, int): mixed  $operation
+     *                                                       Each invocation is explicitly chosen by the caller; persistent state belongs to the host app.
      */
     public function run(callable $operation): ScenarioReport
     {

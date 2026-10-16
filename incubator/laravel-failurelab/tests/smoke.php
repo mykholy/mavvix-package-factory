@@ -31,6 +31,7 @@ $report = FailureLab::scenario('controlled fault')
     ->interruptOnceAt('provider.accepted')->attempts(2)
     ->run(static function ($points, int $attempt): int {
         $points->hit('provider.accepted');
+
         return $attempt;
     });
 $report->assertAttempts(2)->assertInterruptedAt('provider.accepted')->assertFaultPlanSatisfied()->assertCheckpointHit('provider.accepted', 2)->assertCompleted();
@@ -46,19 +47,29 @@ $failed = FailureLab::scenario('unexpected exception')->attempts(20)->run(static
 $verify($unexpected === 1 && count($failed->attempts) === 1, 'unexpected failure is not retried');
 $verify($failed->attempts[0]->status === 'failed', 'unexpected status captured');
 $thrown = false;
-try { $failed->assertCompleted(); } catch (ExpectationFailed) { $thrown = true; }
+try {
+    $failed->assertCompleted();
+} catch (ExpectationFailed) {
+    $thrown = true;
+}
 $verify($thrown, 'failed result assertion fails');
 
 $neverReached = FailureLab::scenario('not reached')->interruptOnceAt('not.reached')->run(static fn () => true);
 $neverReached->assertCompleted()->assertInterruptedAt('not.reached', 0);
 $thrown = false;
-try { $neverReached->assertInterruptedAt('not.reached'); } catch (ExpectationFailed) { $thrown = true; }
+try {
+    $neverReached->assertInterruptedAt('not.reached');
+} catch (ExpectationFailed) {
+    $thrown = true;
+}
 $verify($thrown, 'missing fault cannot silently pass assertion');
 
 $events = 0;
 $once = [];
 $replay = FailureLab::replay('duplicate event')->times(3)->run(static function () use (&$once, &$events): void {
-    if (isset($once['evt1'])) { return; }
+    if (isset($once['evt1'])) {
+        return;
+    }
     $once['evt1'] = true;
     $events++;
 });
@@ -76,7 +87,9 @@ $previous = getenv('APP_ENV');
 putenv('APP_ENV=production');
 $executed = false;
 try {
-    FailureLab::scenario('unsafe')->run(static function () use (&$executed): void { $executed = true; });
+    FailureLab::scenario('unsafe')->run(static function () use (&$executed): void {
+        $executed = true;
+    });
     throw new RuntimeException('Guard failed to block execution');
 } catch (UnsafeEnvironment) {
     $verify(! $executed, 'production environment prevented execution');
@@ -85,10 +98,18 @@ try {
 }
 
 $invalid = false;
-try { FailureLab::scenario('invalid')->interruptOnceAt('.. invalid name'); } catch (InvalidArgumentException) { $invalid = true; }
+try {
+    FailureLab::scenario('invalid')->interruptOnceAt('.. invalid name');
+} catch (InvalidArgumentException) {
+    $invalid = true;
+}
 $verify($invalid, 'reject invalid checkpoint');
 $invalid = false;
-try { FailureLab::scenario('invalid')->attempts(100000); } catch (InvalidArgumentException) { $invalid = true; }
+try {
+    FailureLab::scenario('invalid')->attempts(100000);
+} catch (InvalidArgumentException) {
+    $invalid = true;
+}
 $verify($invalid, 'bound attempts');
 
 $multi = FailureLab::scenario('two controlled faults')
@@ -96,6 +117,7 @@ $multi = FailureLab::scenario('two controlled faults')
     ->run(static function ($checkpoint): string {
         $checkpoint->hit('first');
         $checkpoint->hit('second');
+
         return 'success';
     });
 $multi->assertAttempts(3)->assertInterruptedAt('first')->assertInterruptedAt('second')->assertFaultPlanSatisfied()->assertCompleted();

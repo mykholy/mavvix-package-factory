@@ -30,6 +30,7 @@ final class CheckoutRecoveryTest extends TestCase
         $accepted = [];
         $provider = static function (string $key) use (&$providerCalls, &$accepted): string {
             $providerCalls++;
+
             return $accepted[$key] ??= 'capture_123';
         };
 
@@ -40,6 +41,7 @@ final class CheckoutRecoveryTest extends TestCase
                 $reference = $provider('order:1:EGP:1000');
                 $point->hit('provider.accepted');
                 DB::table('orders')->where('id', 1)->update(['status' => 'paid']);
+
                 return $reference;
             });
 

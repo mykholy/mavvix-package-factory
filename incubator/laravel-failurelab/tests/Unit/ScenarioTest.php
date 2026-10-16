@@ -128,7 +128,9 @@ final class ScenarioTest extends TestCase
         $report = FailureLab::scenario('unreachable later fault')
             ->interruptOnceAt('will.not.run', onAttempt: 2)
             ->attempts(3)
-            ->run(static function (): string { return 'completed on first attempt'; });
+            ->run(static function (): string {
+                return 'completed on first attempt';
+            });
 
         $report->assertAttempts(1)->assertCompleted();
         $this->expectException(ExpectationFailed::class);
@@ -177,7 +179,9 @@ final class ScenarioTest extends TestCase
         try {
             $executed = false;
             try {
-                FailureLab::scenario('unsafe')->run(function () use (&$executed) { $executed = true; });
+                FailureLab::scenario('unsafe')->run(function () use (&$executed) {
+                    $executed = true;
+                });
                 self::fail('Expected environment guard to reject production.');
             } catch (UnsafeEnvironment) {
                 self::assertFalse($executed);

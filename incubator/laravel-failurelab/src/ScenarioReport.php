@@ -12,11 +12,12 @@ use Mykholy\FailureLab\Reports\AssertsRecoveryInvariants;
 final readonly class ScenarioReport
 {
     use AssertsRecoveryInvariants;
+
     /**
-     * @param list<Attempt> $attempts
-     * @param array<string, int> $hits
-     * @param list<string> $interruptions
-     * @param list<string> $scheduledInterruptions Expected rules as checkpoint@attempt.
+     * @param  list<Attempt>  $attempts
+     * @param  array<string, int>  $hits
+     * @param  list<string>  $interruptions
+     * @param  list<string>  $scheduledInterruptions  Expected rules as checkpoint@attempt.
      */
     public function __construct(
         public string $name,
