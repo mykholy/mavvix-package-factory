@@ -33,7 +33,7 @@ $report = FailureLab::scenario('controlled fault')
         $points->hit('provider.accepted');
         return $attempt;
     });
-$report->assertAttempts(2)->assertInterruptedAt('provider.accepted')->assertCheckpointHit('provider.accepted', 2)->assertCompleted();
+$report->assertAttempts(2)->assertInterruptedAt('provider.accepted')->assertFaultPlanSatisfied()->assertCheckpointHit('provider.accepted', 2)->assertCompleted();
 $verify($report->value() === 2, 'second attempt result');
 $verify($report->attempts[0]->status === 'interrupted', 'first interrupted');
 $verify($report->attempts[1]->status === 'completed', 'second completed');
@@ -98,7 +98,7 @@ $multi = FailureLab::scenario('two controlled faults')
         $checkpoint->hit('second');
         return 'success';
     });
-$multi->assertAttempts(3)->assertInterruptedAt('first')->assertInterruptedAt('second')->assertCompleted();
+$multi->assertAttempts(3)->assertInterruptedAt('first')->assertInterruptedAt('second')->assertFaultPlanSatisfied()->assertCompleted();
 $verify($multi->value() === 'success', 'multiple scheduled faults');
 
 $recovered = FailureLab::replay('opt-in transport retry')
@@ -120,5 +120,17 @@ $recoveredByDefault = FailureLab::replay('default aborts')->times(3)
     ->run(static fn (): never => throw new LogicException('stop'));
 $recoveredByDefault->assertDeliveries(1)->assertFailedDeliveries(1);
 $verify(count($recoveredByDefault->deliveries) === 1, 'default remains fail closed');
+
+$unreached = FailureLab::scenario('missing injection')
+    ->interruptOnceAt('not.reached', 2)->attempts(3)
+    ->run(static fn (): string => 'finished early');
+$unreached->assertCompleted();
+$unmet = false;
+try {
+    $unreached->assertFaultPlanSatisfied();
+} catch (ExpectationFailed) {
+    $unmet = true;
+}
+$verify($unmet, 'skipped fault plan cannot report success');
 
 printf("PASS: %d standalone smoke assertions, two scenario types, safety guard and report checks\n", $checks);
