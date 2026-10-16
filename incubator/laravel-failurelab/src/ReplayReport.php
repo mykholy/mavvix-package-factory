@@ -23,6 +23,54 @@ final readonly class ReplayReport
         return $this;
     }
 
+    /** Assert the number of handler exceptions recorded during sequential replay. */
+    public function assertFailedDeliveries(int $expected): self
+    {
+        if ($expected < 0) {
+            throw new \InvalidArgumentException('Expected failed deliveries must not be negative.');
+        }
+
+        $actual = count(array_filter(
+            $this->deliveries,
+            static fn (Attempt $delivery): bool => $delivery->status === 'failed',
+        ));
+
+        if ($actual !== $expected) {
+            throw new ExpectationFailed(
+                "Replay [{$this->name}] expected {$expected} failed deliveries; got {$actual}."
+            );
+        }
+
+        return $this;
+    }
+
+    /**
+     * A later handler invocation completed after an earlier failed invocation.
+     *
+     * This asserts handler completion ONLY, not correctness or external idempotency.
+     * Pair with assertInvariant() for the business effect and provider-call checks.
+     */
+    public function assertRecoveredAfterFailure(): self
+    {
+        $sawFailure = false;
+
+        foreach ($this->deliveries as $delivery) {
+            if ($delivery->status === 'failed') {
+                $sawFailure = true;
+
+                continue;
+            }
+
+            if ($sawFailure && $delivery->status === 'completed') {
+                return $this;
+            }
+        }
+
+        throw new ExpectationFailed(
+            "Replay [{$this->name}] has no completed handler delivery following a failed delivery."
+        );
+    }
+
     /** Bounded counters only. This does not include payloads or provider output. */
     public function summary(): array
     {
@@ -30,6 +78,7 @@ final readonly class ReplayReport
             'scenario' => $this->name,
             'deliveries' => count($this->deliveries),
             'completed' => count(array_filter($this->deliveries, static fn (Attempt $attempt): bool => $attempt->status === 'completed')),
+            'failed' => count(array_filter($this->deliveries, static fn (Attempt $attempt): bool => $attempt->status === 'failed')),
         ];
     }
 
