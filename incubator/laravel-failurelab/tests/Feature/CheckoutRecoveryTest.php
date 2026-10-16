@@ -7,6 +7,7 @@ namespace Mykholy\FailureLab\Tests\Feature;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Mykholy\FailureLab\Exceptions\ExpectationFailed;
 use Mykholy\FailureLab\FailureLab;
 use Mykholy\FailureLab\FailureLabManager;
 
@@ -67,7 +68,7 @@ final class CheckoutRecoveryTest extends TestCase
         $report->assertAttempts(2)->assertFaultPlanSatisfied()->assertCompleted();
         self::assertSame(2, $acceptedCaptures, 'This deliberately unsafe fake accepted two captures.');
 
-        $this->expectException(\Mykholy\FailureLab\Exceptions\ExpectationFailed::class);
+        $this->expectException(ExpectationFailed::class);
         $this->expectExceptionMessage('Recovery invariant [one accepted provider capture] did not hold.');
         $report->assertInvariant('one accepted provider capture', static fn (): bool => $acceptedCaptures === 1);
     }
