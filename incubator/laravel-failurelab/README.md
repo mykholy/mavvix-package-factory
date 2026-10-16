@@ -158,6 +158,7 @@ The auditable source and automated test matrix currently live at [Mavvix Package
 ```bash
 composer install
 composer test
+composer analyse
 vendor/bin/pint --test
 ```
 

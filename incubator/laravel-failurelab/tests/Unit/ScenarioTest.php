@@ -234,6 +234,26 @@ final class ScenarioTest extends TestCase
         FailureLab::scenario('safe')->interruptOnceAt('point')->interruptOnceAt('point');
     }
 
+    public function test_scenario_name_rejects_a_leading_nul_instead_of_trimming_it_away(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        FailureLab::scenario("\0apparently-valid");
+    }
+
+    public function test_scenario_name_rejects_invalid_utf8(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        FailureLab::scenario("invalid-\xFF");
+    }
+
+    public function test_scenario_name_preserves_safe_unicode_labels(): void
+    {
+        $name = 'اختبار إعادة المحاولة';
+        $report = FailureLab::scenario($name)->run(static fn (): bool => true);
+
+        self::assertSame($name, $report->assertCompleted()->name);
+    }
+
     public function test_wrong_environment_is_denied_before_running_handler(): void
     {
         $previous = getenv('APP_ENV');
