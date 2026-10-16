@@ -160,7 +160,6 @@ final class ScenarioTest extends TestCase
         $report->assertCompleted();
     }
 
-
     public function test_swallowed_fault_is_not_counted_as_a_verified_interruption(): void
     {
         $report = FailureLab::scenario('handler swallowed test interruption')
