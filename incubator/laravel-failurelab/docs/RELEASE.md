@@ -11,18 +11,20 @@ dedicated package repository exists.
 - [x] PHPUnit fails on risky tests, and the suite contains explicit recovery negative controls
 - [x] Laravel Pint `--test` enforces the project's PHP style
 - [x] Clean Laravel 12 and 13 consumer applications install via Composer path repository, resolve the provider through package discovery, and execute a Scenario and Replay
+- [x] PHPStan level 5 analyses the package source with a clean baseline (PHP 8.4 / Laravel 13)
+- [x] Real MySQL 8.4 and PostgreSQL 17 integration fixtures verify rollback, post-commit idempotent replay, and failed-handler recovery
 - [x] The canonical source archive is built and verified by GitHub Actions
 - [x] Documentation disclaims real process termination, network exactly-once guarantees and automatic protection of production data
 
 Evidence: [fresh Composer installation + test matrix](https://github.com/mykholy/mavvix-package-factory/actions/runs/38831465896),
-[package source-archive pipeline](https://github.com/mykholy/mavvix-package-factory/actions/runs/38831215982).
+[package source-archive pipeline](https://github.com/mykholy/mavvix-package-factory/actions/runs/38831215982),
+[verified PHPStan, MySQL/PostgreSQL and full release-gate matrix](https://github.com/mykholy/mavvix-package-factory/actions/runs/38887570951).
 The later CI fixes are tracked in [PR #22](https://github.com/mykholy/mavvix-package-factory/pull/22) and
 [PR #23](https://github.com/mykholy/mavvix-package-factory/pull/23).
 
 ## Open release gates
 
-- [ ] Dedicated PHPStan analysis on PHP 8.4 / Laravel 13 (new CI gate; record passing run before checking this)
-- [ ] Real MySQL 8.4 and PostgreSQL 17 transaction/replay tests (new CI jobs; record passing run before checking this)
+
 - [ ] Mutation/negative testing for business invariant checks and unexpected provider state
 - [ ] Security audit including source scanning and reviewed unsafe-environment behavior
 - [ ] External maintainer adoption feedback and competitive-gap validation (the initial opportunity score did not clear the factory's 80/100 gate)

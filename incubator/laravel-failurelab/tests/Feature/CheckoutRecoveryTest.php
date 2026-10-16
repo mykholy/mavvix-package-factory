@@ -7,6 +7,7 @@ namespace Mykholy\FailureLab\Tests\Feature;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Mykholy\FailureLab\Exceptions\ExpectationFailed;
 use Mykholy\FailureLab\FailureLab;
 use Mykholy\FailureLab\FailureLabManager;
 
@@ -50,6 +51,26 @@ final class CheckoutRecoveryTest extends TestCase
         self::assertSame(2, $providerCalls, 'Two attempts contacted the fake provider.');
         self::assertCount(1, $accepted, 'The provider fake accepted one idempotent capture.');
         self::assertSame('paid', DB::table('orders')->where('id', 1)->value('status'));
+    }
+
+    public function test_non_idempotent_provider_is_detected_by_a_business_invariant(): void
+    {
+        $acceptedCaptures = 0;
+
+        $report = FailureLab::scenario('non-idempotent fake provider')
+            ->interruptOnceAt('provider.accepted')
+            ->attempts(2)
+            ->run(static function ($checkpoint) use (&$acceptedCaptures): void {
+                $acceptedCaptures++;
+                $checkpoint->hit('provider.accepted');
+            });
+
+        $report->assertAttempts(2)->assertFaultPlanSatisfied()->assertCompleted();
+        self::assertSame(2, $acceptedCaptures, 'This deliberately unsafe fake accepted two captures.');
+
+        $this->expectException(ExpectationFailed::class);
+        $this->expectExceptionMessage('Recovery invariant [one accepted provider capture] did not hold.');
+        $report->assertInvariant('one accepted provider capture', static fn (): bool => $acceptedCaptures === 1);
     }
 
     public function test_injectable_manager_is_registered_by_service_provider(): void

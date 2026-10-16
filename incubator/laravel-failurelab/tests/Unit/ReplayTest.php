@@ -118,6 +118,12 @@ final class ReplayTest extends TestCase
         $report->assertFailedDeliveries(2);
     }
 
+    public function test_replay_name_rejects_bidirectional_formatting_controls(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        FailureLab::replay("report\u{202E}spoof");
+    }
+
     public function test_invalid_delivery_counts_fail_early(): void
     {
         $this->expectException(InvalidArgumentException::class);
