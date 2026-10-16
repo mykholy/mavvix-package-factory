@@ -86,6 +86,15 @@ final class Scenario
             }
         }
 
-        return new ScenarioReport($this->name, $attempts, $hits, array_keys($interruptions));
+        return new ScenarioReport(
+            $this->name,
+            $attempts,
+            $hits,
+            array_keys($interruptions),
+            array_map(
+                static fn (FaultRule $rule): string => $rule->checkpoint.'@'.$rule->onAttempt,
+                $this->rules,
+            ),
+        );
     }
 }
