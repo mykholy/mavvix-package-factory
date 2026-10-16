@@ -95,7 +95,7 @@ final readonly class ScenarioReport
     {
         if ($this->attempts === [] || $this->attempts[array_key_last($this->attempts)]->status !== 'completed') {
             $last = $this->attempts[array_key_last($this->attempts)] ?? null;
-            $status = $last?->status ?? 'not-started';
+            $status = $last->status ?? 'not-started';
             $exception = $last?->error === null ? 'none' : get_debug_type($last->error);
             throw new ExpectationFailed(
                 "Scenario [{$this->name}] did not complete: status={$status}; exception={$exception}. "

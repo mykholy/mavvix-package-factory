@@ -220,6 +220,7 @@ final class ScenarioTest extends TestCase
             });
 
         $report->assertAttempts(2)->assertFaultPlanSatisfied()->assertCompleted();
+        self::assertSame('completed', $report->attempts[1]->status);
     }
 
     public function test_invalid_names_and_duplicate_fault_rules_fail_early(): void

@@ -105,6 +105,8 @@ final class DatabaseBoundaryTest extends TestCase
         $report->assertAttempts(2)->assertFaultPlanSatisfied()->assertCompleted()
             ->assertInvariant('one persistent event', static fn (): bool => DB::table('failurelab_events')->count() === 1)
             ->assertInvariant('no second ledger effect', static fn (): bool => DB::table('failurelab_effects')->count() === 1);
+        self::assertSame(1, DB::table('failurelab_events')->count());
+        self::assertSame(1, DB::table('failurelab_effects')->count());
     }
 
     public function test_sequential_webhook_redelivery_recovers_after_transaction_rollback(): void
