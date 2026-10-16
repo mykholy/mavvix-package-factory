@@ -96,8 +96,68 @@ jobs:
           if-no-files-found: error
           retention-days: 3
 
+  consumer-install:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        laravel: ['12', '13']
+    steps:
+      - uses: actions/checkout@v5
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+          extensions: mbstring, dom, pdo_sqlite, sqlite3
+          tools: composer:v2
+      - name: Create clean Laravel host application
+        run: |
+          composer create-project laravel/laravel "$RUNNER_TEMP/failurelab-host" "^${{ matrix.laravel }}" --no-interaction --prefer-dist --no-progress
+      - name: Install package as real dev dependency via Composer path repository
+        working-directory: ${{ runner.temp }}/failurelab-host
+        run: |
+          composer config repositories.failurelab "{\"type\":\"path\",\"url\":\"${GITHUB_WORKSPACE}/incubator/laravel-failurelab\",\"options\":{\"symlink\":false}}"
+          composer require --dev "mykholy/laravel-failurelab:@dev" --no-interaction --prefer-dist --no-progress
+          composer show mykholy/laravel-failurelab
+      - name: Verify Laravel provider auto-discovery and independent consumer usage
+        working-directory: ${{ runner.temp }}/failurelab-host
+        run: |
+          cat > "$RUNNER_TEMP/check-consumer.php" <<'PHP'
+          <?php
+
+          declare(strict_types=1);
+
+          require getcwd().'/vendor/autoload.php';
+          $app = require getcwd().'/bootstrap/app.php';
+          $app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+
+          $manager = $app->make(\Mykholy\FailureLab\FailureLabManager::class);
+          $result = $manager->scenario('fresh Laravel consumer')
+              ->interruptOnceAt('after.gateway')
+              ->attempts(2)
+              ->run(static function ($checkpoint, int $attempt): int {
+                  $checkpoint->hit('after.gateway');
+
+                  return $attempt;
+              });
+          $result->assertAttempts(2)
+              ->assertFaultPlanSatisfied()
+              ->assertCompleted();
+
+          $delivered = $manager->replay('redelivery through fresh install')
+              ->times(2)
+              ->run(static fn (): bool => true);
+          $delivered->assertDeliveries(2)->assertAllCompleted();
+
+          echo "PASS: independent Laravel Composer installation, provider discovery, checkpoint and replay\n";
+          PHP
+          APP_ENV=testing php "$RUNNER_TEMP/check-consumer.php"
+
   source-archive:
-    needs: [smoke, laravel]
+    needs: [smoke, laravel, consumer-install]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
