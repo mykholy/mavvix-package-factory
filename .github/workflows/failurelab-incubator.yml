@@ -27,7 +27,7 @@ jobs:
       run:
         working-directory: incubator/laravel-failurelab
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
@@ -64,7 +64,7 @@ jobs:
       run:
         working-directory: incubator/laravel-failurelab
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
@@ -79,6 +79,9 @@ jobs:
           composer update --with-all-dependencies --no-interaction --prefer-dist --no-progress
       - name: PHPUnit unit and Laravel integration tests
         run: vendor/bin/phpunit --configuration phpunit.xml.dist --fail-on-risky
+      - name: Laravel Pint formatting (primary PHP/Laravel matrix)
+        if: matrix.php == '8.4' && matrix.laravel == '13'
+        run: vendor/bin/pint --test
 
   source-archive:
     needs: [smoke, laravel]
@@ -87,7 +90,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Export canonical Composer package
         run: |
           set -euo pipefail
