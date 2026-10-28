@@ -114,6 +114,45 @@ class GlobalMetricsTests(unittest.TestCase):
         self.assertIn("Required next steps", report_markdown(report))
 
 
+class IssueCreationMetricsTests(unittest.TestCase):
+    def test_new_old_and_unknown_counts_use_distinct_urls_and_utc(self):
+        class Client:
+            def search_issues(self, query, *, per_page=20):
+                if query.startswith("laravel queue"):
+                    return [
+                        issue(10),
+                        {**issue(11), "created_at": "2026-10-01T00:30:00+02:00"},
+                        {**issue(12), "created_at": "not-a-timestamp"},
+                    ], False
+                return [issue(10)], False
+
+        topics = [
+            Topic("queue", "Queue reliability", "laravel queue"),
+            Topic("tenancy", "Tenant isolation", "laravel tenancy"),
+        ]
+        opportunities, warnings = scan(Client(), topics, since=date(2026, 10, 1))
+        report = make_report(opportunities, warnings, date(2026, 10, 1), "synthetic_fixture")
+        self.assertEqual(report["issue_creation_metrics"], {
+            "created_within_window": 1,
+            "created_before_window": 1,
+            "unknown_created_at": 1,
+        })
+        self.assertEqual(report["global_metrics"]["unique_issue_urls"], 3)
+        markdown = report_markdown(report)
+        self.assertIn("Created before window but updated recently: 1", markdown)
+        self.assertIn("not necessarily newly reported", markdown)
+
+    def test_empty_and_legacy_reports_remain_readable(self):
+        report = make_report([], [], date(2026, 10, 1), "synthetic_fixture")
+        self.assertEqual(report["issue_creation_metrics"], {
+            "created_within_window": 0,
+            "created_before_window": 0,
+            "unknown_created_at": 0,
+        })
+        del report["issue_creation_metrics"]
+        self.assertNotIn("Issue creation timing", report_markdown(report))
+
+
 class RelevanceTests(unittest.TestCase):
     def test_title_matches_but_laravel_context_is_missing(self):
         topic = Topic("q", "Queue reliability", "query", ("queue", "retry"))
