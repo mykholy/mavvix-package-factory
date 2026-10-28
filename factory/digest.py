@@ -58,6 +58,20 @@ def render_digest(report: dict[str, Any], *, run_url: str, analysis: str = "") -
         "> Automated analysis cannot approve package development or publication.",
         "",
     ]
+    creation = report.get("issue_creation_metrics")
+    if isinstance(creation, dict) and all(
+        isinstance(creation.get(key), int) and creation[key] >= 0
+        for key in ("created_within_window", "created_before_window", "unknown_created_at")
+    ):
+        lines.extend([
+            "## New issues vs recently updated issues",
+            "",
+            f"- Created within the search window (UTC): {creation['created_within_window']}",
+            f"- Created earlier, updated in the window: {creation['created_before_window']}",
+            f"- Unknown creation time: {creation['unknown_created_at']}",
+            "- Counts are distinct sampled issue URLs, not proof of demand.",
+            "",
+        ])
     if report.get("warnings"):
         lines.extend(["## Collection warnings", ""])
         lines.extend(f"- {safe_title(str(w))}" for w in report["warnings"][:12])

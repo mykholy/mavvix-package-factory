@@ -110,6 +110,38 @@ def global_discovery_metrics(opportunities: list[Opportunity]) -> dict[str, int]
     }
 
 
+def issue_creation_metrics(opportunities: list[Opportunity], since: date) -> dict[str, int]:
+    """Classify distinct sampled issues by UTC creation date, not last update.
+
+    An unknown or invalid timestamp is never silently classified as a new issue.
+    These are sampled issue URLs, not independent reports of developer demand.
+    """
+    unique = {
+        evidence.url.lower(): evidence
+        for opportunity in opportunities
+        for evidence in opportunity.evidence
+    }
+    counts = {
+        "created_within_window": 0,
+        "created_before_window": 0,
+        "unknown_created_at": 0,
+    }
+    for evidence in unique.values():
+        try:
+            created = datetime.fromisoformat(evidence.created_at.replace("Z", "+00:00"))
+            if created.tzinfo is None:
+                raise ValueError("Missing timezone")
+            created_date = created.astimezone(timezone.utc).date()
+        except ValueError:
+            counts["unknown_created_at"] += 1
+            continue
+        if created_date >= since:
+            counts["created_within_window"] += 1
+        else:
+            counts["created_before_window"] += 1
+    return counts
+
+
 def report_markdown(report: dict[str, Any]) -> str:
     lines = [
         "# Mavvix — Developer Issue Discovery",
@@ -134,6 +166,17 @@ def report_markdown(report: dict[str, Any]) -> str:
             f"- Retained issue-topic matches: {metrics['total_retained_issue_topic_matches']}",
             f"- Unique GitHub Issue URLs (across topics): {metrics['unique_issue_urls']}",
             "- These are **sampled results**, not independent developer demand or market size.",
+            "",
+        ])
+    creation = report.get("issue_creation_metrics")
+    if isinstance(creation, dict):
+        lines.extend([
+            "## Issue creation timing (distinct sampled URLs)",
+            "",
+            f"- Created within search window (UTC): {creation['created_within_window']}",
+            f"- Created before window but updated recently: {creation['created_before_window']}",
+            f"- Missing or invalid creation timestamp: {creation['unknown_created_at']}",
+            "- Recently updated issues are not necessarily newly reported problems.",
             "",
         ])
     for warning in report["warnings"]:
@@ -181,6 +224,7 @@ def make_report(
         "mode": mode,
         "warnings": warnings,
         "global_metrics": global_discovery_metrics(opportunities),
+        "issue_creation_metrics": issue_creation_metrics(opportunities, since),
         "opportunities": [op.as_dict() for op in opportunities],
     }
 
