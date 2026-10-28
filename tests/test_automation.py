@@ -72,6 +72,20 @@ class DigestTests(unittest.TestCase):
         body = render_digest(data, run_url="https://github.com/example/repo/actions/runs/1")
         self.assertNotIn("evil.invalid", body)
 
+    def test_digest_shows_creation_timing_when_available(self):
+        data = report()
+        data["issue_creation_metrics"] = {
+            "created_within_window": 2,
+            "created_before_window": 4,
+            "unknown_created_at": 1,
+        }
+        body = render_digest(data, run_url="https://github.com/example/repo/actions/runs/1")
+        self.assertIn("Created earlier, updated in the window: 4", body)
+        self.assertIn("not proof of demand", body)
+        del data["issue_creation_metrics"]
+        legacy = render_digest(data, run_url="https://github.com/example/repo/actions/runs/1")
+        self.assertNotIn("New issues vs recently updated issues", legacy)
+
     def test_create_update_and_idempotency(self):
         existing = []
         calls = []
