@@ -41,13 +41,13 @@ class PublishTrustBoundaryTests(unittest.TestCase):
             subprocess.run(["git", "-C", str(repo), "config", "user.name", "Test"], check=True)
             subprocess.run(["git", "-C", str(repo), "config", "user.email", "test@example.com"], check=True)
             protected = repo / "factory/agent_queue.py"
-            protected.write_text("# trusted baseline\\n", encoding="utf-8")
+            protected.write_text("# trusted baseline\n", encoding="utf-8")
             subprocess.run(["git", "-C", str(repo), "add", "."], check=True)
             subprocess.run(["git", "-C", str(repo), "commit", "-qm", "baseline"], check=True)
 
             marker = root / "untrusted-executed"
             protected.write_text(
-                "from pathlib import Path\\nPath(" + repr(str(marker)) + ").write_text('bad')\\n",
+                "from pathlib import Path\nPath(" + repr(str(marker)) + ").write_text('bad')\n",
                 encoding="utf-8",
             )
             result = subprocess.run(
