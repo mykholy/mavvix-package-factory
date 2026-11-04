@@ -110,32 +110,49 @@ def global_discovery_metrics(opportunities: list[Opportunity]) -> dict[str, int]
     }
 
 
-def issue_creation_metrics(opportunities: list[Opportunity], since: date) -> dict[str, int]:
-    """Classify distinct sampled issues by UTC creation date, not last update.
+def _utc_created_at(value: str) -> datetime | None:
+    """Parse an issue creation timestamp, rejecting naive and invalid values."""
+    try:
+        created = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        if created.tzinfo is None:
+            return None
+        return created.astimezone(timezone.utc)
+    except (ValueError, OverflowError):
+        return None
 
-    An unknown or invalid timestamp is never silently classified as a new issue.
-    These are sampled issue URLs, not independent reports of developer demand.
+
+def issue_creation_metrics(opportunities: list[Opportunity], since: date) -> dict[str, int]:
+    """Classify distinct sampled URLs using the earliest valid UTC creation time.
+
+    GitHub issue creation is immutable. If sampled records disagree, choose the
+    earliest valid timestamp conservatively; never turn an older issue into a
+    newly created one because of topic ordering or malformed duplicate data.
     """
-    unique = {
-        evidence.url.lower(): evidence
-        for opportunity in opportunities
-        for evidence in opportunity.evidence
-    }
+    unique: dict[str, Evidence] = {}
+    for opportunity in opportunities:
+        for evidence in opportunity.evidence:
+            key = evidence.url.lower()
+            previous = unique.get(key)
+            if previous is None:
+                unique[key] = evidence
+                continue
+            current_created = _utc_created_at(evidence.created_at)
+            previous_created = _utc_created_at(previous.created_at)
+            if current_created is not None and (
+                previous_created is None or current_created < previous_created
+            ):
+                unique[key] = evidence
+
     counts = {
         "created_within_window": 0,
         "created_before_window": 0,
         "unknown_created_at": 0,
     }
     for evidence in unique.values():
-        try:
-            created = datetime.fromisoformat(evidence.created_at.replace("Z", "+00:00"))
-            if created.tzinfo is None:
-                raise ValueError("Missing timezone")
-            created_date = created.astimezone(timezone.utc).date()
-        except ValueError:
+        created = _utc_created_at(evidence.created_at)
+        if created is None:
             counts["unknown_created_at"] += 1
-            continue
-        if created_date >= since:
+        elif created.date() >= since:
             counts["created_within_window"] += 1
         else:
             counts["created_before_window"] += 1
