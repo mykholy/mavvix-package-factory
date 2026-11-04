@@ -60,7 +60,7 @@ def render_digest(report: dict[str, Any], *, run_url: str, analysis: str = "") -
     ]
     creation = report.get("issue_creation_metrics")
     if isinstance(creation, dict) and all(
-        isinstance(creation.get(key), int) and creation[key] >= 0
+        type(creation.get(key)) is int and creation[key] >= 0
         for key in ("created_within_window", "created_before_window", "unknown_created_at")
     ):
         lines.extend([
