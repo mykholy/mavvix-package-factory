@@ -110,6 +110,55 @@ def global_discovery_metrics(opportunities: list[Opportunity]) -> dict[str, int]
     }
 
 
+def _utc_created_at(value: str) -> datetime | None:
+    """Parse an issue creation timestamp, rejecting naive and invalid values."""
+    try:
+        created = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        if created.tzinfo is None:
+            return None
+        return created.astimezone(timezone.utc)
+    except (ValueError, OverflowError):
+        return None
+
+
+def issue_creation_metrics(opportunities: list[Opportunity], since: date) -> dict[str, int]:
+    """Classify distinct sampled URLs using the earliest valid UTC creation time.
+
+    GitHub issue creation is immutable. If sampled records disagree, choose the
+    earliest valid timestamp conservatively; never turn an older issue into a
+    newly created one because of topic ordering or malformed duplicate data.
+    """
+    unique: dict[str, Evidence] = {}
+    for opportunity in opportunities:
+        for evidence in opportunity.evidence:
+            key = evidence.url.lower()
+            previous = unique.get(key)
+            if previous is None:
+                unique[key] = evidence
+                continue
+            current_created = _utc_created_at(evidence.created_at)
+            previous_created = _utc_created_at(previous.created_at)
+            if current_created is not None and (
+                previous_created is None or current_created < previous_created
+            ):
+                unique[key] = evidence
+
+    counts = {
+        "created_within_window": 0,
+        "created_before_window": 0,
+        "unknown_created_at": 0,
+    }
+    for evidence in unique.values():
+        created = _utc_created_at(evidence.created_at)
+        if created is None:
+            counts["unknown_created_at"] += 1
+        elif created.date() >= since:
+            counts["created_within_window"] += 1
+        else:
+            counts["created_before_window"] += 1
+    return counts
+
+
 def report_markdown(report: dict[str, Any]) -> str:
     lines = [
         "# Mavvix — Developer Issue Discovery",
@@ -134,6 +183,17 @@ def report_markdown(report: dict[str, Any]) -> str:
             f"- Retained issue-topic matches: {metrics['total_retained_issue_topic_matches']}",
             f"- Unique GitHub Issue URLs (across topics): {metrics['unique_issue_urls']}",
             "- These are **sampled results**, not independent developer demand or market size.",
+            "",
+        ])
+    creation = report.get("issue_creation_metrics")
+    if isinstance(creation, dict):
+        lines.extend([
+            "## Issue creation timing (distinct sampled URLs)",
+            "",
+            f"- Created within search window (UTC): {creation['created_within_window']}",
+            f"- Created before window but updated recently: {creation['created_before_window']}",
+            f"- Missing or invalid creation timestamp: {creation['unknown_created_at']}",
+            "- Recently updated issues are not necessarily newly reported problems.",
             "",
         ])
     for warning in report["warnings"]:
@@ -181,6 +241,7 @@ def make_report(
         "mode": mode,
         "warnings": warnings,
         "global_metrics": global_discovery_metrics(opportunities),
+        "issue_creation_metrics": issue_creation_metrics(opportunities, since),
         "opportunities": [op.as_dict() for op in opportunities],
     }
 
