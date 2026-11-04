@@ -19,3 +19,16 @@ The scanner only samples the latest **20** matches per topic; it does **not** ex
 New discovery reports include `global_metrics.total_retained_issue_topic_matches` (sum of retained per-topic counts) and `global_metrics.unique_issue_urls` (case-normalized GitHub Issue URL count after validation/filtering, deduplicated across topics). Existing report fields are preserved for downstream clients. The Markdown report surfaces both metrics.
 
 Because scans sample the latest 20 results per topic, neither count measures all related GitHub problems, distinct customers, or validated market demand.
+
+## New vs recently updated issues
+
+Discovery reports also include `issue_creation_metrics` with three **distinct sampled URL**
+counts: `created_within_window`, `created_before_window`, and `unknown_created_at`.
+Creation dates are normalized to UTC before comparison with the reporting window.
+For conflicting evidence about one URL, the earliest valid UTC creation timestamp
+is chosen conservatively; invalid or missing timestamps are not counted as new.
+The weekly digest displays these counts when valid. A result resurfacing because
+it was recently updated is **not** a newly reported problem.
+
+See the [2026-11-04 upstream triage](2026-11-04-upstream-triage.md) for examples of
+real Laravel bug reports, maintained alternatives, and false-positive risk.
