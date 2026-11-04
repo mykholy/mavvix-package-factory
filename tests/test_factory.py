@@ -142,6 +142,37 @@ class IssueCreationMetricsTests(unittest.TestCase):
         self.assertIn("Created before window but updated recently: 1", markdown)
         self.assertIn("not necessarily newly reported", markdown)
 
+    def test_conflicting_duplicate_creation_times_are_order_independent(self):
+        class Client:
+            def search_issues(self, query, *, per_page=20):
+                if query.startswith("laravel queue"):
+                    return [
+                        {**issue(10), "created_at": "not-a-timestamp"},
+                        {**issue(11), "created_at": "2026-10-03T00:00:00Z"},
+                        {**issue(12), "created_at": "2026-10-02T00:00:00Z"},
+                    ], False
+                return [
+                    {**issue(10), "created_at": "2026-09-29T23:00:00Z"},
+                    {**issue(11), "created_at": "2026-09-30T23:00:00Z"},
+                    {**issue(12), "created_at": "invalid"},
+                ], False
+
+        topics = [
+            Topic("queue", "Queue reliability", "laravel queue"),
+            Topic("tenancy", "Tenant isolation", "laravel tenancy"),
+        ]
+        expected = {
+            "created_within_window": 1,
+            "created_before_window": 2,
+            "unknown_created_at": 0,
+        }
+        for ordering in (topics, list(reversed(topics))):
+            with self.subTest(topics=[topic.id for topic in ordering]):
+                opportunities, warnings = scan(Client(), ordering, since=date(2026, 10, 1))
+                report = make_report(opportunities, warnings, date(2026, 10, 1), "synthetic_fixture")
+                self.assertEqual(report["issue_creation_metrics"], expected)
+                self.assertEqual(report["global_metrics"]["unique_issue_urls"], 3)
+
     def test_empty_and_legacy_reports_remain_readable(self):
         report = make_report([], [], date(2026, 10, 1), "synthetic_fixture")
         self.assertEqual(report["issue_creation_metrics"], {
