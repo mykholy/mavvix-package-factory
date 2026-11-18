@@ -35,6 +35,37 @@ class ModelsTests(unittest.TestCase):
         self.assertIsNone(Evidence.from_github({**issue(), "number": 999}))
         self.assertIsNone(Evidence.from_github({**issue(), "pull_request": {}}))
 
+    def test_malformed_issue_metadata_is_handled_without_exceptions(self):
+        self.assertIsNone(Evidence.from_github({**issue(), "number": "not-a-number"}))
+        self.assertIsNone(Evidence.from_github({**issue(), "number": True}))
+        self.assertIsNone(Evidence.from_github({
+            **issue(), "html_url": "https://github.com/acme/project/issues/12?ref=duplicate"
+        }))
+        self.assertIsNone(Evidence.from_github({
+            **issue(), "html_url": "https://github.com:invalid/acme/project/issues/12"
+        }))
+        self.assertEqual(Evidence.from_github({**issue(), "comments": "invalid"}).comments, 0)
+        self.assertEqual(Evidence.from_github({**issue(), "comments": -3}).comments, 0)
+        self.assertEqual(Evidence.from_github({**issue(), "comments": True}).comments, 0)
+
+    def test_scan_continues_after_malformed_issue_record(self):
+        class Client:
+            def search_issues(self, query, *, per_page=20):
+                return [
+                    issue(10),
+                    {**issue(11), "number": "malformed"},
+                    {**issue(12), "comments": "unknown"},
+                ], False
+
+        opportunities, warnings = scan(
+            Client(), [Topic("q", "Queue reliability", "laravel queue")],
+            since=date(2026, 10, 1),
+        )
+        self.assertEqual(warnings, [])
+        self.assertEqual(opportunities[0].issue_count, 2)
+        self.assertEqual(opportunities[0].filtered_results, 1)
+        self.assertEqual(opportunities[0].evidence[1].comments, 0)
+
     def test_score_is_bounded_and_not_a_market_score(self):
         evidence = tuple(Evidence.from_github(issue(n, f"org{n}/repo", comments=100)) for n in range(1, 40))
         self.assertEqual(signal_score(evidence), 35)
