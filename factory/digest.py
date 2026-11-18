@@ -72,6 +72,19 @@ def render_digest(report: dict[str, Any], *, run_url: str, analysis: str = "") -
             "- Counts are distinct sampled issue URLs, not proof of demand.",
             "",
         ])
+    metrics = report.get("global_metrics")
+    if isinstance(metrics, dict) and all(
+        type(metrics.get(key)) is int and metrics[key] >= 0
+        for key in ("total_retained_issue_topic_matches", "unique_issue_urls")
+    ):
+        lines.extend([
+            "## Across all topics",
+            "",
+            f"- Retained issue-topic matches: {metrics['total_retained_issue_topic_matches']}",
+            f"- Distinct sampled GitHub Issue URLs: {metrics['unique_issue_urls']}",
+            "- Repeated matches across topics do not represent independent demand.",
+            "",
+        ])
     if report.get("warnings"):
         lines.extend(["## Collection warnings", ""])
         lines.extend(f"- {safe_title(str(w))}" for w in report["warnings"][:12])
@@ -101,12 +114,19 @@ def render_digest(report: dict[str, Any], *, run_url: str, analysis: str = "") -
             ),
             "",
         ])
-        for evidence in (op.get("evidence") or [])[:6]:
-            if not isinstance(evidence, dict):
-                continue
-            url = str(evidence.get("url") or "")
-            if VALID_GITHUB_ISSUE.fullmatch(url):
-                lines.append(f"- [{safe_title(str(evidence.get('title', 'GitHub issue')))}]({url})")
+        valid_links = [
+            evidence for evidence in (op.get("evidence") or [])
+            if isinstance(evidence, dict)
+            and VALID_GITHUB_ISSUE.fullmatch(str(evidence.get("url") or ""))
+        ]
+        for evidence in valid_links[:6]:
+            url = str(evidence["url"])
+            lines.append(f"- [{safe_title(str(evidence.get('title', 'GitHub issue')))}]({url})")
+        if len(valid_links) > 6:
+            lines.append(
+                f"- _Showing 6 of {len(valid_links)} validated links; "
+                "the discovery artifact contains the full retained sample._"
+            )
         lines.append("")
     lines.extend([
         "## Next decision gate",
